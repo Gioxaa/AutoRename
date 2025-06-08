@@ -15,7 +15,7 @@ app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max upload size
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
 app.config['OUTPUT_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'outputs')
 app.config['ALLOWED_EXTENSIONS'] = {'pdf'}
-app.config['SESSION_COOKIE_SECURE'] = True  # Set to True if using HTTPS
+app.config['SESSION_COOKIE_SECURE'] = False  # Set to False to allow HTTP session
 
 # Create necessary folders
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -247,61 +247,87 @@ def process():
         flash('Please upload a file first')
         return redirect(url_for('index'))
     
-    # Get form data
-    split_size = request.form.get('split_size', type=int)
-    keyword = request.form.get('keyword', 'DIBERIKAN KEPADA')
-    
-    if not split_size or split_size <= 0:
-        flash('Split size must be a positive number')
-        return redirect(url_for('configure'))
-    
-    # Initialize processing status
-    session['processing_status'] = {
-        'status': 'processing',
-        'progress': 0,
-        'current_file': '',
-        'files_processed': 0,
-        'total_files': 0
-    }
-    
-    # Process the PDF
-    session_output_folder = os.path.join(app.config['OUTPUT_FOLDER'], session['session_id'])
-    result = process_pdf_with_status(session['uploaded_file'], session_output_folder, split_size, keyword)
-    
-    if result['success']:
-        # Create ZIP file
-        session['processing_status']['status'] = 'creating_zip'
-        zip_filename = f"split_{os.path.basename(session['original_filename'])}.zip"
-        zip_path = create_zip_archive(session_output_folder, zip_filename)
-        session['zip_path'] = zip_path
-        session['result'] = result
+    try:
+        # Get form data
+        split_size = request.form.get('split_size', type=int)
+        keyword = request.form.get('keyword', 'DIBERIKAN KEPADA')
         
-        # Update status to complete
+        if not split_size or split_size <= 0:
+            flash('Split size must be a positive number')
+            return redirect(url_for('configure'))
+        
+        print(f"Starting processing with split_size={split_size}, keyword='{keyword}'")
+        print(f"Uploaded file: {session.get('uploaded_file')}")
+        
+        # Initialize processing status
         session['processing_status'] = {
-            'status': 'complete',
-            'progress': 100,
-            'files_processed': result['total_files'],
-            'total_files': result['total_files']
+            'status': 'processing',
+            'progress': 0,
+            'current_file': '',
+            'files_processed': 0,
+            'total_files': 0
         }
         
-        return redirect(url_for('result'))
-    else:
-        # Update status to error
-        session['processing_status'] = {
-            'status': 'error',
-            'error': result.get('error', 'Unknown error')
-        }
+        # Process the PDF
+        session_output_folder = os.path.join(app.config['OUTPUT_FOLDER'], session['session_id'])
+        print(f"Output folder: {session_output_folder}")
         
-        flash(f"Error processing PDF: {result.get('error', 'Unknown error')}")
+        # Ensure output folder exists and is writable
+        if not os.path.exists(session_output_folder):
+            os.makedirs(session_output_folder, exist_ok=True)
+            print(f"Created output folder: {session_output_folder}")
+        
+        # Check if file exists
+        if not os.path.exists(session['uploaded_file']):
+            raise FileNotFoundError(f"Uploaded file not found: {session['uploaded_file']}")
+        
+        result = process_pdf_with_status(session['uploaded_file'], session_output_folder, split_size, keyword)
+        
+        if result['success']:
+            # Create ZIP file
+            session['processing_status']['status'] = 'creating_zip'
+            zip_filename = f"split_{os.path.basename(session['original_filename'])}.zip"
+            zip_path = create_zip_archive(session_output_folder, zip_filename)
+            session['zip_path'] = zip_path
+            session['result'] = result
+            
+            # Update status to complete
+            session['processing_status'] = {
+                'status': 'complete',
+                'progress': 100,
+                'files_processed': result['total_files'],
+                'total_files': result['total_files']
+            }
+            
+            return redirect(url_for('result'))
+        else:
+            # Update status to error
+            error_msg = result.get('error', 'Unknown error')
+            print(f"Processing error: {error_msg}")
+            session['processing_status'] = {
+                'status': 'error',
+                'error': error_msg
+            }
+            
+            flash(f"Error processing PDF: {error_msg}")
+            return redirect(url_for('configure'))
+    except Exception as e:
+        import traceback
+        print(f"CRITICAL ERROR in process route: {str(e)}")
+        traceback.print_exc()
+        flash(f"Critical error: {str(e)}")
         return redirect(url_for('configure'))
 
 def process_pdf_with_status(input_path, output_folder, split_size, keyword):
     """Process PDF file with status updates"""
     results = []
     try:
+        print(f"Opening PDF: {input_path}")
         doc = fitz.open(input_path)
         total_pages = len(doc)
         total_files = (total_pages + split_size - 1) // split_size
+        
+        print(f"PDF opened successfully. Total pages: {total_pages}, Expected files: {total_files}")
         
         # Update status with total files
         if 'processing_status' in session:
@@ -312,12 +338,14 @@ def process_pdf_with_status(input_path, output_folder, split_size, keyword):
             session.modified = True
         
         for i in range(0, total_pages, split_size):
+            print(f"Processing pages {i+1}-{min(i+split_size, total_pages)}")
             new_doc = fitz.open()
             end_page = min(i + split_size - 1, total_pages - 1)
             new_doc.insert_pdf(doc, from_page=i, to_page=end_page)
 
             name = extract_name_from_pages(doc, i, keyword, split_size)
             safe_name = sanitize_filename(name)
+            print(f"Extracted name: {safe_name}")
             
             # Use just the name without page number prefix
             output_path = os.path.join(output_folder, f"{safe_name}.pdf")
@@ -343,8 +371,10 @@ def process_pdf_with_status(input_path, output_folder, split_size, keyword):
                 })
                 session.modified = True
 
+            print(f"Saving file to: {output_path}")
             new_doc.save(output_path)
             new_doc.close()
+            print(f"File saved successfully: {output_path}")
             
             # Add to results
             results.append({
@@ -354,6 +384,7 @@ def process_pdf_with_status(input_path, output_folder, split_size, keyword):
             })
         
         doc.close()
+        print("PDF processing completed successfully")
         return {
             'success': True,
             'files': results,
@@ -361,6 +392,9 @@ def process_pdf_with_status(input_path, output_folder, split_size, keyword):
             'total_pages': total_pages
         }
     except Exception as e:
+        print(f"ERROR in PDF processing: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return {
             'success': False,
             'error': str(e)
