@@ -12,6 +12,12 @@ services:
     environment:
       - SECRET_KEY=change_this_to_a_secure_random_string
       - SESSION_COOKIE_SECURE=false  # Set to true if using HTTPS
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
 volumes:
   pdf_uploads:

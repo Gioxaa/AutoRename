@@ -6,6 +6,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     build-essential \
     libffi-dev \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
@@ -28,5 +29,5 @@ ENV FLASK_APP=app.py
 # Expose port
 EXPOSE 5000
 
-# Run the application with Gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "wsgi:app"] 
+# Run the application with Gunicorn with increased timeout
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--timeout", "300", "wsgi:app"] 
