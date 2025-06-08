@@ -7,6 +7,7 @@ from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, flash, send_file, jsonify, session
 from werkzeug.utils import secure_filename
 import fitz  # PyMuPDF
+import time
 
 # Create Flask app
 app = Flask(__name__)
@@ -16,10 +17,15 @@ app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__fil
 app.config['OUTPUT_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'outputs')
 app.config['ALLOWED_EXTENSIONS'] = {'pdf'}
 app.config['SESSION_COOKIE_SECURE'] = False  # Set to False to allow HTTP session
+app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # Increase to 100MB
+app.config['UPLOAD_CHUNK_SIZE'] = 4096  # Optimize chunk size for better performance
 
 # Create necessary folders
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
+
+# Tambahkan dictionary global untuk menyimpan status upload
+upload_progress = {}
 
 # Add current year to all templates
 @app.context_processor
@@ -146,10 +152,18 @@ def upload_file():
         os.makedirs(session_upload_folder, exist_ok=True)
         os.makedirs(session_output_folder, exist_ok=True)
         
-        # Save uploaded file
+        # Save uploaded file - optimize for speed
         filename = secure_filename(file.filename)
         file_path = os.path.join(session_upload_folder, filename)
-        file.save(file_path)
+        
+        # Use buffer size optimization
+        chunk_size = app.config.get('UPLOAD_CHUNK_SIZE', 4096)
+        with open(file_path, 'wb') as f:
+            while True:
+                chunk = file.read(chunk_size)
+                if not chunk:
+                    break
+                f.write(chunk)
         
         # Store file info in session
         session['uploaded_file'] = file_path
@@ -480,6 +494,14 @@ def debug_session():
     
     session_data = {key: session[key] for key in session if key != 'csrf_token'}
     return jsonify(session_data)
+
+# Tambahkan route baru untuk mengecek progress
+@app.route('/upload_progress/<session_id>')
+def get_upload_progress(session_id):
+    """Return the current upload progress"""
+    if session_id in upload_progress:
+        return jsonify(upload_progress[session_id])
+    return jsonify({'progress': 0})
 
 if __name__ == '__main__':
     # For development only - use a production WSGI server for deployment

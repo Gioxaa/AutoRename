@@ -191,8 +191,8 @@
                 // Show file name before uploading
                 dropArea.querySelector('h3').textContent = 'Uploading: ' + file.name;
                 
-                showProgress();
-                uploadForm.submit();
+                // Use optimized upload with XHR for better performance
+                uploadFileWithProgress(file);
             }
         });
         
@@ -242,26 +242,68 @@
                 // Show file name before uploading
                 dropArea.querySelector('h3').textContent = 'Uploading: ' + file.name;
                 
-                fileInput.files = files;
-                showProgress();
-                uploadForm.submit();
+                // Use optimized upload
+                uploadFileWithProgress(file);
             }
         }
         
         function showProgress() {
-            browseBtn.style.display = 'none';
             progressContainer.style.display = 'block';
+            browseBtn.style.display = 'none';
+        }
+        
+        function uploadFileWithProgress(file) {
+            showProgress();
             
-            // Simulate progress for better UX
-            let progress = 0;
-            const interval = setInterval(() => {
-                progress += 5;
-                if (progress > 90) {
-                    clearInterval(interval);
+            // Create FormData and append file
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            // Use XHR for better control over upload progress
+            const xhr = new XMLHttpRequest();
+            
+            // Setup upload progress handler
+            xhr.upload.addEventListener('progress', function(e) {
+                if (e.lengthComputable) {
+                    const percentComplete = Math.min(Math.round((e.loaded / e.total) * 100), 95);
+                    progressBar.style.width = percentComplete + '%';
+                    progressText.textContent = 'Uploading... ' + percentComplete + '%';
+                    
+                    // Start "Processing..." message at 95%
+                    if (percentComplete >= 95) {
+                        progressText.textContent = 'Processing... Please wait';
+                    }
                 }
-                progressBar.style.width = progress + '%';
-                progressText.textContent = 'Uploading... ' + progress + '%';
-            }, 300);
+            });
+            
+            // Setup completion handler
+            xhr.addEventListener('load', function() {
+                if (xhr.status === 200 || xhr.status === 302) {
+                    // Redirect to the configure page
+                    window.location.href = "{{ url_for('configure') }}";
+                } else {
+                    progressText.textContent = 'Upload failed. Please try again.';
+                    progressBar.style.width = '0%';
+                    setTimeout(() => {
+                        progressContainer.style.display = 'none';
+                        browseBtn.style.display = 'inline-block';
+                    }, 3000);
+                }
+            });
+            
+            // Setup error handler
+            xhr.addEventListener('error', function() {
+                progressText.textContent = 'Upload failed. Please try again.';
+                progressBar.style.width = '0%';
+                setTimeout(() => {
+                    progressContainer.style.display = 'none';
+                    browseBtn.style.display = 'inline-block';
+                }, 3000);
+            });
+            
+            // Open connection and send the file
+            xhr.open('POST', "{{ url_for('upload_file') }}", true);
+            xhr.send(formData);
         }
     });
 </script>
