@@ -1,0 +1,162 @@
+2025-06-09 00:12:17,918 - INFO - Created folder: I:\Documents\CODING\AutoRename\output
+2025-06-09 00:12:24,625 - INFO - Processing PDF with 28 pages
+2025-06-09 00:12:24,773 - INFO - Created: I:\Documents\CODING\AutoRename\output\001-Azizah Nur Hanifah.pdf (Pages 1-2)
+2025-06-09 00:12:24,817 - INFO - Created: I:\Documents\CODING\AutoRename\output\003-Suci Putri Anjani.pdf (Pages 3-4)
+2025-06-09 00:12:24,844 - INFO - Created: I:\Documents\CODING\AutoRename\output\005-Bunga Laviola.pdf (Pages 5-6)
+2025-06-09 00:12:24,870 - INFO - Created: I:\Documents\CODING\AutoRename\output\007-Dinda Azura.pdf (Pages 7-8)
+2025-06-09 00:12:24,894 - INFO - Created: I:\Documents\CODING\AutoRename\output\009-Tamara Loka Br Tarigan.pdf (Pages 9-10)
+2025-06-09 00:12:24,921 - INFO - Created: I:\Documents\CODING\AutoRename\output\011-Miftahul Masyitah.pdf (Pages 11-12)
+2025-06-09 00:12:24,947 - INFO - Created: I:\Documents\CODING\AutoRename\output\013-Puan Nabila Risty.pdf (Pages 13-14)
+2025-06-09 00:12:24,990 - INFO - Created: I:\Documents\CODING\AutoRename\output\015-Eni Urbaningrum.pdf (Pages 15-16)
+2025-06-09 00:12:25,015 - INFO - Created: I:\Documents\CODING\AutoRename\output\017-Yesi Rahma Putri Utami Siregar.pdf (Pages 17-18)
+2025-06-09 00:12:25,049 - INFO - Created: I:\Documents\CODING\AutoRename\output\019-Najwa Salsabila.pdf (Pages 19-20)
+2025-06-09 00:12:25,074 - INFO - Created: I:\Documents\CODING\AutoRename\output\021-Natasya Eslyn. S.pdf (Pages 21-22)
+2025-06-09 00:12:25,102 - INFO - Created: I:\Documents\CODING\AutoRename\output\023-Nayra Amanda Amril.pdf (Pages 23-24)
+2025-06-09 00:12:25,154 - INFO - Created: I:\Documents\CODING\AutoRename\output\025-Safa Salsabila.pdf (Pages 25-26)
+2025-06-09 00:12:25,185 - INFO - Created: I:\Documents\CODING\AutoRename\output\027-Fitri Lasmida Siringo-Ringo.pdf (Pages 27-28)
+2025-06-09 00:12:57,135 - INFO - Created new folder: I:\Documents\CODING\AutoRename\output_2
+2025-06-09 00:13:02,842 - INFO - Processing PDF with 28 pages
+2025-06-09 00:13:02,918 - INFO - Created: I:\Documents\CODING\AutoRename\output_2\001-Azizah Nur Hanifah.pdf (Pages 1-2)
+2025-06-09 00:13:03,011 - INFO - Created: I:\Documents\CODING\AutoRename\output_2\003-Suci Putri Anjani.pdf (Pages 3-4)
+2025-06-09 00:13:03,036 - INFO - Created: I:\Documents\CODING\AutoRename\output_2\005-Bunga Laviola.pdf (Pages 5-6)
+2025-06-09 00:13:03,061 - INFO - Created: I:\Documents\CODING\AutoRename\output_2\007-Dinda Azura.pdf (Pages 7-8)
+2025-06-09 00:13:03,089 - INFO - Created: I:\Documents\CODING\AutoRename\output_2\009-Tamara Loka Br Tarigan.pdf (Pages 9-10)
+2025-06-09 00:13:03,117 - INFO - Created: I:\Documents\CODING\AutoRename\output_2\011-Miftahul Masyitah.pdf (Pages 11-12)
+2025-06-09 00:13:03,171 - INFO - Created: I:\Documents\CODING\AutoRename\output_2\013-Puan Nabila Risty.pdf (Pages 13-14)
+2025-06-09 00:13:03,202 - INFO - Created: I:\Documents\CODING\AutoRename\output_2\015-Eni Urbaningrum.pdf (Pages 15-16)
+2025-06-09 00:13:03,226 - INFO - Created: I:\Documents\CODING\AutoRename\output_2\017-Yesi Rahma Putri Utami Siregar.pdf (Pages 17-18)
+2025-06-09 00:13:03,254 - INFO - Created: I:\Documents\CODING\AutoRename\output_2\019-Najwa Salsabila.pdf (Pages 19-20)
+2025-06-09 00:13:03,302 - INFO - Created: I:\Documents\CODING\AutoRename\output_2\021-Natasya Eslyn. S.pdf (Pages 21-22)
+2025-06-09 00:13:03,324 - INFO - Created: I:\Documents\CODING\AutoRename\output_2\023-Nayra Amanda Amril.pdf (Pages 23-24)
+2025-06-09 00:13:03,358 - INFO - Created: I:\Documents\CODING\AutoRename\output_2\025-Safa Salsabila.pdf (Pages 25-26)
+2025-06-09 00:13:03,395 - INFO - Created: I:\Documents\CODING\AutoRename\output_2\027-Fitri Lasmida Siringo-Ringo.pdf (Pages 27-28)
+INFO - Replaced existing folder: I:\Documents\CODING\AutoRename\output_2
+INFO - Processing PDF with 28 pages
+INFO - Created: I:\Documents\CODING\AutoRename\output_2\001-Azizah Nur Hanifah.pdf (Pages 1-2)
+INFO - Created: I:\Documents\CODING\AutoRename\output_2\003-Suci Putri Anjani.pdf (Pages 3-4)
+INFO - Created: I:\Documents\CODING\AutoRename\output_2\005-Bunga Laviola.pdf (Pages 5-6)
+INFO - Created: I:\Documents\CODING\AutoRename\output_2\007-Dinda Azura.pdf (Pages 7-8)
+INFO - Created: I:\Documents\CODING\AutoRename\output_2\009-Tamara Loka Br Tarigan.pdf (Pages 9-10)
+INFO - Created: I:\Documents\CODING\AutoRename\output_2\011-Miftahul Masyitah.pdf (Pages 11-12)
+INFO - Created: I:\Documents\CODING\AutoRename\output_2\013-Puan Nabila Risty.pdf (Pages 13-14)
+INFO - Created: I:\Documents\CODING\AutoRename\output_2\015-Eni Urbaningrum.pdf (Pages 15-16)
+INFO - Created: I:\Documents\CODING\AutoRename\output_2\017-Yesi Rahma Putri Utami Siregar.pdf (Pages 17-18)
+INFO - Created: I:\Documents\CODING\AutoRename\output_2\019-Najwa Salsabila.pdf (Pages 19-20)
+INFO - Created: I:\Documents\CODING\AutoRename\output_2\021-Natasya Eslyn. S.pdf (Pages 21-22)
+INFO - Created: I:\Documents\CODING\AutoRename\output_2\023-Nayra Amanda Amril.pdf (Pages 23-24)
+INFO - Created: I:\Documents\CODING\AutoRename\output_2\025-Safa Salsabila.pdf (Pages 25-26)
+INFO - Created: I:\Documents\CODING\AutoRename\output_2\027-Fitri Lasmida Siringo-Ringo.pdf (Pages 27-28)
+INFO - Program terminated by user
+INFO - Created new folder: I:\Documents\CODING\AutoRename\output_2_2
+INFO - Processing PDF with 28 pages
+INFO - Created: I:\Documents\CODING\AutoRename\output_2_2\001-Azizah Nur Hanifah.pdf (Pages 1-2)
+INFO - Created: I:\Documents\CODING\AutoRename\output_2_2\003-Suci Putri Anjani.pdf (Pages 3-4)
+INFO - Created: I:\Documents\CODING\AutoRename\output_2_2\005-Bunga Laviola.pdf (Pages 5-6)
+INFO - Created: I:\Documents\CODING\AutoRename\output_2_2\007-Dinda Azura.pdf (Pages 7-8)
+INFO - Created: I:\Documents\CODING\AutoRename\output_2_2\009-Tamara Loka Br Tarigan.pdf (Pages 9-10)
+INFO - Created: I:\Documents\CODING\AutoRename\output_2_2\011-Miftahul Masyitah.pdf (Pages 11-12)
+INFO - Created: I:\Documents\CODING\AutoRename\output_2_2\013-Puan Nabila Risty.pdf (Pages 13-14)
+INFO - Created: I:\Documents\CODING\AutoRename\output_2_2\015-Eni Urbaningrum.pdf (Pages 15-16)
+INFO - Created: I:\Documents\CODING\AutoRename\output_2_2\017-Yesi Rahma Putri Utami Siregar.pdf (Pages 17-18)
+INFO - Created: I:\Documents\CODING\AutoRename\output_2_2\019-Najwa Salsabila.pdf (Pages 19-20)
+INFO - Created: I:\Documents\CODING\AutoRename\output_2_2\021-Natasya Eslyn. S.pdf (Pages 21-22)
+INFO - Created: I:\Documents\CODING\AutoRename\output_2_2\023-Nayra Amanda Amril.pdf (Pages 23-24)
+INFO - Created: I:\Documents\CODING\AutoRename\output_2_2\025-Safa Salsabila.pdf (Pages 25-26)
+INFO - Created: I:\Documents\CODING\AutoRename\output_2_2\027-Fitri Lasmida Siringo-Ringo.pdf (Pages 27-28)
+INFO - Created folder: I:\Documents\CODING\AutoRename\output_2_2
+INFO - Program terminated by user
+INFO - Created folder: output
+INFO - Processing PDF with 28 pages
+INFO - Created: output\001-Azizah Nur Hanifah.pdf (Pages 1-2)
+INFO - Created: output\003-Suci Putri Anjani.pdf (Pages 3-4)
+INFO - Created: output\005-Bunga Laviola.pdf (Pages 5-6)
+INFO - Created: output\007-Dinda Azura.pdf (Pages 7-8)
+INFO - Created: output\009-Tamara Loka Br Tarigan.pdf (Pages 9-10)
+INFO - Created: output\011-Miftahul Masyitah.pdf (Pages 11-12)
+INFO - Created: output\013-Puan Nabila Risty.pdf (Pages 13-14)
+INFO - Created: output\015-Eni Urbaningrum.pdf (Pages 15-16)
+INFO - Created: output\017-Yesi Rahma Putri Utami Siregar.pdf (Pages 17-18)
+INFO - Created: output\019-Najwa Salsabila.pdf (Pages 19-20)
+INFO - Created: output\021-Natasya Eslyn. S.pdf (Pages 21-22)
+INFO - Created: output\023-Nayra Amanda Amril.pdf (Pages 23-24)
+INFO - Created: output\025-Safa Salsabila.pdf (Pages 25-26)
+INFO - Created: output\027-Fitri Lasmida Siringo-Ringo.pdf (Pages 27-28)
+INFO - Program terminated by user
+INFO - Created folder: output2
+INFO - Processing PDF with 28 pages
+INFO - Created: output2\001-Azizah Nur Hanifah.pdf (Pages 1-2)
+INFO - Created: output2\003-Suci Putri Anjani.pdf (Pages 3-4)
+INFO - Created: output2\005-Bunga Laviola.pdf (Pages 5-6)
+INFO - Created: output2\007-Dinda Azura.pdf (Pages 7-8)
+INFO - Created: output2\009-Tamara Loka Br Tarigan.pdf (Pages 9-10)
+INFO - Created: output2\011-Miftahul Masyitah.pdf (Pages 11-12)
+INFO - Created: output2\013-Puan Nabila Risty.pdf (Pages 13-14)
+INFO - Created: output2\015-Eni Urbaningrum.pdf (Pages 15-16)
+INFO - Created: output2\017-Yesi Rahma Putri Utami Siregar.pdf (Pages 17-18)
+INFO - Created: output2\019-Najwa Salsabila.pdf (Pages 19-20)
+INFO - Created: output2\021-Natasya Eslyn. S.pdf (Pages 21-22)
+INFO - Created: output2\023-Nayra Amanda Amril.pdf (Pages 23-24)
+INFO - Created: output2\025-Safa Salsabila.pdf (Pages 25-26)
+INFO - Created: output2\027-Fitri Lasmida Siringo-Ringo.pdf (Pages 27-28)
+INFO - Created folder: outputwwkkwkw
+INFO - Processing PDF with 28 pages
+INFO - Created: outputwwkkwkw\001-Azizah Nur Hanifah.pdf (Pages 1-2)
+INFO - Created: outputwwkkwkw\003-Suci Putri Anjani.pdf (Pages 3-4)
+INFO - Created: outputwwkkwkw\005-Bunga Laviola.pdf (Pages 5-6)
+INFO - Created: outputwwkkwkw\007-Dinda Azura.pdf (Pages 7-8)
+INFO - Created: outputwwkkwkw\009-Tamara Loka Br Tarigan.pdf (Pages 9-10)
+INFO - Created: outputwwkkwkw\011-Miftahul Masyitah.pdf (Pages 11-12)
+INFO - Created: outputwwkkwkw\013-Puan Nabila Risty.pdf (Pages 13-14)
+INFO - Created: outputwwkkwkw\015-Eni Urbaningrum.pdf (Pages 15-16)
+INFO - Created: outputwwkkwkw\017-Yesi Rahma Putri Utami Siregar.pdf (Pages 17-18)
+INFO - Created: outputwwkkwkw\019-Najwa Salsabila.pdf (Pages 19-20)
+INFO - Created: outputwwkkwkw\021-Natasya Eslyn. S.pdf (Pages 21-22)
+INFO - Created: outputwwkkwkw\023-Nayra Amanda Amril.pdf (Pages 23-24)
+INFO - Created: outputwwkkwkw\025-Safa Salsabila.pdf (Pages 25-26)
+INFO - Created: outputwwkkwkw\027-Fitri Lasmida Siringo-Ringo.pdf (Pages 27-28)
+INFO - Created folder: output
+INFO - Processing PDF with 28 pages
+INFO - Created: output\Azizah Nur Hanifah.pdf (Pages 1-2)
+INFO - Created: output\Suci Putri Anjani.pdf (Pages 3-4)
+INFO - Created: output\Bunga Laviola.pdf (Pages 5-6)
+INFO - Created: output\Dinda Azura.pdf (Pages 7-8)
+INFO - Created: output\Tamara Loka Br Tarigan.pdf (Pages 9-10)
+INFO - Created: output\Miftahul Masyitah.pdf (Pages 11-12)
+INFO - Created: output\Puan Nabila Risty.pdf (Pages 13-14)
+INFO - Created: output\Eni Urbaningrum.pdf (Pages 15-16)
+INFO - Created: output\Yesi Rahma Putri Utami Siregar.pdf (Pages 17-18)
+INFO - Created: output\Najwa Salsabila.pdf (Pages 19-20)
+INFO - Created: output\Natasya Eslyn. S.pdf (Pages 21-22)
+INFO - Created: output\Nayra Amanda Amril.pdf (Pages 23-24)
+INFO - Created: output\Safa Salsabila.pdf (Pages 25-26)
+INFO - Created: output\Fitri Lasmida Siringo-Ringo.pdf (Pages 27-28)
+INFO - Created folder: output 2
+INFO - Processing PDF with 2 pages
+INFO - Created: output 2\Azizah Nur Hanifah.pdf (Pages 1-2)
+INFO - Replaced existing folder: output 2
+INFO - Processing PDF with 2 pages
+INFO - Created: output 2\Azizah Nur Hanifah.pdf (Pages 1-2)
+INFO - Replaced existing folder: output 2
+INFO - Processing PDF with 2 pages
+INFO - Created: output 2\Azizah Nur Hanifah.pdf (Pages 1-2)
+INFO - Program terminated by user
+INFO - Replaced existing folder: output 2
+INFO - Processing PDF with 2 pages
+INFO - Created: output 2\Azizah Nur Hanifah.pdf (Pages 1-1)
+INFO - Created: output 2\Yesi Rahma Putri Utami Siregar.pdf (Pages 2-2)
+INFO - Created folder: 2
+INFO - Processing PDF with 28 pages
+INFO - Created: 2\Azizah Nur Hanifah.pdf (Pages 1-2)
+INFO - Created: 2\Suci Putri Anjani.pdf (Pages 3-4)
+INFO - Created: 2\Bunga Laviola.pdf (Pages 5-6)
+INFO - Created: 2\Dinda Azura.pdf (Pages 7-8)
+INFO - Created: 2\Tamara Loka Br Tarigan.pdf (Pages 9-10)
+INFO - Created: 2\Miftahul Masyitah.pdf (Pages 11-12)
+INFO - Created: 2\Puan Nabila Risty.pdf (Pages 13-14)
+INFO - Created: 2\Eni Urbaningrum.pdf (Pages 15-16)
+INFO - Created: 2\Yesi Rahma Putri Utami Siregar.pdf (Pages 17-18)
+INFO - Created: 2\Najwa Salsabila.pdf (Pages 19-20)
+INFO - Created: 2\Natasya Eslyn. S.pdf (Pages 21-22)
+INFO - Created: 2\Nayra Amanda Amril.pdf (Pages 23-24)
+INFO - Created: 2\Safa Salsabila.pdf (Pages 25-26)
+INFO - Created: 2\Fitri Lasmida Siringo-Ringo.pdf (Pages 27-28)
