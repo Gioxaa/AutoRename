@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}Results - PDF Splitter & Auto Renamer{% endblock %}
+
+{% block content %}
+<div class="card mb-4">
+    <div class="card-header bg-success text-white">
+        <h4 class="mb-0"><i class="fas fa-check-circle me-2"></i> PDF Processing Complete</h4>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-success">
+            <i class="fas fa-info-circle me-2"></i> Your PDF has been successfully split into {{ result.total_files }} files.
+        </div>
+        
+        <div class="d-grid gap-2 mb-4">
+            <a href="{{ url_for('download_zip') }}" class="btn btn-primary btn-lg">
+                <i class="fas fa-download me-2"></i> Download All Files (ZIP)
+            </a>
+        </div>
+        
+        <h5 class="mb-3"><i class="fas fa-list me-2"></i> Individual Files:</h5>
+        
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    <input type="text" class="form-control" id="file-search" placeholder="Search files...">
+                </div>
+            </div>
+            <div class="col-md-6 text-end">
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-outline-secondary" id="view-grid-btn">
+                        <i class="fas fa-th-large"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary active" id="view-list-btn">
+                        <i class="fas fa-list"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- List View (default) -->
+        <div id="list-view">
+            {% for file in result.files %}
+            <div class="result-item file-item" data-filename="{{ file.filename }}">
+                <div>
+                    <i class="fas fa-file-pdf me-2 text-danger"></i>
+                    <strong>{{ file.filename }}</strong>
+                    <span class="text-muted ms-2">(Pages {{ file.pages }})</span>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-outline-secondary preview-btn" data-filename="{{ file.filename }}">
+                        <i class="fas fa-eye"></i> Preview
+                    </button>
+                    <a href="{{ url_for('download_file', filename=file.filename) }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-download"></i> Download
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Grid View (hidden by default) -->
+        <div id="grid-view" class="row" style="display: none;">
+            {% for file in result.files %}
+            <div class="col-md-4 mb-3 file-item" data-filename="{{ file.filename }}">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h6 class="card-title text-truncate">
+                            <i class="fas fa-file-pdf me-2 text-danger"></i>
+                            {{ file.filename }}
+                        </h6>
+                        <p class="card-text text-muted small">Pages: {{ file.pages }}</p>
+                    </div>
+                    <div class="card-footer bg-transparent d-flex justify-content-between">
+                        <button class="btn btn-sm btn-outline-secondary preview-btn" data-filename="{{ file.filename }}">
+                            <i class="fas fa-eye"></i> Preview
+                        </button>
+                        <a href="{{ url_for('download_file', filename=file.filename) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-download"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- PDF Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1" aria-labelledby="previewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="previewModalLabel">PDF Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="pdf-preview-container" style="height: 70vh; position: relative;">
+                    <div id="modal-pdf-loading" class="loading-spinner" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);"></div>
+                    <iframe id="modal-pdf-iframe" style="width: 100%; height: 100%; border: none; display: none;" allowfullscreen></iframe>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="#" class="btn btn-primary" id="modal-download-btn" download>
+                    <i class="fas fa-download me-2"></i> Download
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="d-flex justify-content-between">
+    <a href="{{ url_for('configure') }}" class="btn btn-secondary">
+        <i class="fas fa-cogs me-2"></i> Adjust Settings
+    </a>
+    <a href="{{ url_for('clear_session') }}" class="btn btn-primary">
+        <i class="fas fa-plus me-2"></i> Process New PDF
+    </a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // View toggle
+        const gridViewBtn = document.getElementById('view-grid-btn');
+        const listViewBtn = document.getElementById('view-list-btn');
+        const gridView = document.getElementById('grid-view');
+        const listView = document.getElementById('list-view');
+        
+        gridViewBtn.addEventListener('click', function() {
+            gridView.style.display = 'flex';
+            listView.style.display = 'none';
+            gridViewBtn.classList.add('active');
+            listViewBtn.classList.remove('active');
+        });
+        
+        listViewBtn.addEventListener('click', function() {
+            gridView.style.display = 'none';
+            listView.style.display = 'block';
+            gridViewBtn.classList.remove('active');
+            listViewBtn.classList.add('active');
+        });
+        
+        // Search functionality
+        const searchInput = document.getElementById('file-search');
+        const fileItems = document.querySelectorAll('.file-item');
+        
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            
+            fileItems.forEach(item => {
+                const filename = item.dataset.filename.toLowerCase();
+                if (filename.includes(searchTerm)) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+        
+        // PDF Preview Modal
+        const previewModal = new bootstrap.Modal(document.getElementById('previewModal'));
+        const previewBtns = document.querySelectorAll('.preview-btn');
+        const modalTitle = document.getElementById('previewModalLabel');
+        const modalDownloadBtn = document.getElementById('modal-download-btn');
+        const modalPdfIframe = document.getElementById('modal-pdf-iframe');
+        const modalLoadingIndicator = document.getElementById('modal-pdf-loading');
+        
+        previewBtns.forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault(); // Prevent default action
+                
+                const filename = this.dataset.filename;
+                modalTitle.textContent = filename;
+                modalDownloadBtn.href = `/download_file/${encodeURIComponent(filename)}`;
+                
+                // Show modal
+                previewModal.show();
+                
+                // Show loading indicator
+                modalLoadingIndicator.style.display = 'block';
+                modalPdfIframe.style.display = 'none';
+                
+                // Set iframe source to the PDF URL with timestamp to prevent caching issues
+                const timestamp = new Date().getTime();
+                modalPdfIframe.src = `/pdf_output/${encodeURIComponent(filename)}?t=${timestamp}`;
+                
+                // Hide loading indicator when iframe is loaded
+                modalPdfIframe.onload = function() {
+                    modalLoadingIndicator.style.display = 'none';
+                    modalPdfIframe.style.display = 'block';
+                };
+                
+                // Handle errors
+                modalPdfIframe.onerror = function() {
+                    modalLoadingIndicator.style.display = 'none';
+                    alert('Failed to load PDF preview. Please try again.');
+                };
+            });
+        });
+        
+        // Clear iframe source when modal is closed to prevent memory leaks
+        document.getElementById('previewModal').addEventListener('hidden.bs.modal', function () {
+            modalPdfIframe.src = '';
+        });
+    });
+</script>
+{% endblock %} 

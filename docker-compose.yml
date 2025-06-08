@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+  web:
+    build: .
+    restart: always
+    ports:
+      - "80:5000"
+    volumes:
+      - pdf_uploads:/app/uploads
+      - pdf_outputs:/app/outputs
+    environment:
+      - SECRET_KEY=change_this_to_a_secure_random_string
+      - SESSION_COOKIE_SECURE=false  # Set to true if using HTTPS
+
+volumes:
+  pdf_uploads:
+  pdf_outputs: 

@@ -1,0 +1,5 @@
+Flask==2.3.3
+PyMuPDF==1.23.3
+Werkzeug==2.3.7
+tqdm==4.66.1
+python-dotenv==1.0.0 

@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="upload-container" id="drop-area">
+    <div class="upload-icon">
+        <i class="fas fa-file-pdf"></i>
+    </div>
+    <h3>Upload PDF File</h3>
+    <p>Drag & drop your PDF file here or click to browse</p>
+    
+    <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data" id="upload-form">
+        <input type="file" name="file" id="file-input" class="form-control d-none" accept=".pdf">
+        <button type="button" class="btn btn-primary mt-3" id="browse-btn">
+            <i class="fas fa-upload me-2"></i> Browse Files
+        </button>
+        
+        <div class="progress-container">
+            <div class="progress mt-3">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+            </div>
+            <p class="mt-2" id="progress-text">Uploading...</p>
+        </div>
+    </form>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-4 text-center">
+        <div class="card h-100 feature-card">
+            <div class="card-body">
+                <div class="feature-icon">
+                    <i class="fas fa-upload text-primary"></i>
+                </div>
+                <h5 class="card-title">Upload</h5>
+                <p class="card-text">Upload your PDF file to get started</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 text-center">
+        <div class="card h-100 feature-card">
+            <div class="card-body">
+                <div class="feature-icon">
+                    <i class="fas fa-cogs text-primary"></i>
+                </div>
+                <h5 class="card-title">Configure</h5>
+                <p class="card-text">Set split size and keyword for name detection</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 text-center">
+        <div class="card h-100 feature-card">
+            <div class="card-body">
+                <div class="feature-icon">
+                    <i class="fas fa-download text-primary"></i>
+                </div>
+                <h5 class="card-title">Download</h5>
+                <p class="card-text">Get your split and renamed files</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="card mt-5">
+    <div class="card-header bg-light">
+        <h5 class="mb-0"><i class="fas fa-star me-2"></i> Features</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="d-flex mb-4">
+                    <div class="feature-bullet me-3">
+                        <i class="fas fa-check-circle text-success"></i>
+                    </div>
+                    <div>
+                        <h6>Automatic Name Detection</h6>
+                        <p class="text-muted">Automatically extracts names from PDF content based on keywords</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="d-flex mb-4">
+                    <div class="feature-bullet me-3">
+                        <i class="fas fa-check-circle text-success"></i>
+                    </div>
+                    <div>
+                        <h6>Custom Split Size</h6>
+                        <p class="text-muted">Split PDFs by any number of pages per output file</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="d-flex mb-4">
+                    <div class="feature-bullet me-3">
+                        <i class="fas fa-check-circle text-success"></i>
+                    </div>
+                    <div>
+                        <h6>Preview Files</h6>
+                        <p class="text-muted">View your PDFs before and after processing</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="d-flex mb-4">
+                    <div class="feature-bullet me-3">
+                        <i class="fas fa-check-circle text-success"></i>
+                    </div>
+                    <div>
+                        <h6>Batch Download</h6>
+                        <p class="text-muted">Download all files at once as a ZIP archive</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+    .feature-card {
+        transition: all 0.3s ease;
+        border: none;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    
+    .feature-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .feature-icon {
+        font-size: 2.5rem;
+        margin-bottom: 15px;
+        height: 60px;
+        width: 60px;
+        line-height: 60px;
+        border-radius: 50%;
+        background-color: rgba(52, 152, 219, 0.1);
+        display: inline-block;
+        transition: all 0.3s ease;
+    }
+    
+    .feature-card:hover .feature-icon {
+        background-color: rgba(52, 152, 219, 0.2);
+        transform: scale(1.1);
+    }
+    
+    .feature-bullet {
+        font-size: 1.5rem;
+        min-width: 30px;
+    }
+    
+    @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+        100% { transform: translateY(0px); }
+    }
+    
+    .upload-icon {
+        animation: float 3s ease-in-out infinite;
+    }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dropArea = document.getElementById('drop-area');
+        const fileInput = document.getElementById('file-input');
+        const browseBtn = document.getElementById('browse-btn');
+        const uploadForm = document.getElementById('upload-form');
+        const progressContainer = document.querySelector('.progress-container');
+        const progressBar = document.querySelector('.progress-bar');
+        const progressText = document.getElementById('progress-text');
+        
+        // Open file browser when button is clicked
+        browseBtn.addEventListener('click', function() {
+            fileInput.click();
+        });
+        
+        // Submit form when file is selected
+        fileInput.addEventListener('change', function() {
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                if (file.type !== 'application/pdf') {
+                    alert('Please select a PDF file.');
+                    return;
+                }
+                
+                // Show file name before uploading
+                dropArea.querySelector('h3').textContent = 'Uploading: ' + file.name;
+                
+                showProgress();
+                uploadForm.submit();
+            }
+        });
+        
+        // Handle drag and drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight() {
+            dropArea.classList.add('bg-light');
+            dropArea.style.transform = 'scale(1.02)';
+            dropArea.style.boxShadow = '0 10px 25px rgba(0, 0, 0, 0.1)';
+        }
+        
+        function unhighlight() {
+            dropArea.classList.remove('bg-light');
+            dropArea.style.transform = 'scale(1)';
+            dropArea.style.boxShadow = 'none';
+        }
+        
+        dropArea.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            if (files.length > 0) {
+                const file = files[0];
+                if (file.type !== 'application/pdf') {
+                    alert('Please drop a PDF file.');
+                    return;
+                }
+                
+                // Show file name before uploading
+                dropArea.querySelector('h3').textContent = 'Uploading: ' + file.name;
+                
+                fileInput.files = files;
+                showProgress();
+                uploadForm.submit();
+            }
+        }
+        
+        function showProgress() {
+            browseBtn.style.display = 'none';
+            progressContainer.style.display = 'block';
+            
+            // Simulate progress for better UX
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 5;
+                if (progress > 90) {
+                    clearInterval(interval);
+                }
+                progressBar.style.width = progress + '%';
+                progressText.textContent = 'Uploading... ' + progress + '%';
+            }, 300);
+        }
+    });
+</script>
+{% endblock %} 

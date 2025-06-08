@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}Configure PDF Split - PDF Splitter & Auto Renamer{% endblock %}
+
+{% block content %}
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h4 class="mb-0"><i class="fas fa-cogs me-2"></i> Configure PDF Split</h4>
+    </div>
+    <div class="card-body">
+        <div class="file-info mb-4">
+            <h5><i class="fas fa-file-pdf me-2"></i> {{ filename }}</h5>
+            <p class="mb-0">Total Pages: <strong>{{ total_pages }}</strong></p>
+            <button class="btn btn-sm btn-outline-primary mt-2" id="toggle-preview-btn">
+                <i class="fas fa-eye me-1"></i> Toggle PDF Preview
+            </button>
+        </div>
+        
+        <!-- PDF Preview Section -->
+        <div class="pdf-preview-container" id="pdf-preview-container" style="display: none;">
+            <div class="pdf-preview-controls mb-2">
+                <button class="btn btn-sm btn-outline-secondary" id="close-preview-btn">
+                    <i class="fas fa-times"></i> Close Preview
+                </button>
+            </div>
+            <div id="pdf-loading" class="loading-spinner" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);"></div>
+            <iframe id="pdf-iframe" style="width: 100%; height: 500px; border: 1px solid #ddd; border-radius: 5px; display: none;" allowfullscreen></iframe>
+        </div>
+        
+        <form action="{{ url_for('process') }}" method="post" id="config-form">
+            <div class="mb-3">
+                <label for="split_size" class="form-label">Split Size (pages per file):</label>
+                <input type="number" class="form-control" id="split_size" name="split_size" min="1" max="{{ total_pages }}" value="2" required>
+                <div class="form-text">Enter how many pages should be in each split file.</div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="keyword" class="form-label">Name Identification Keyword:</label>
+                <input type="text" class="form-control" id="keyword" name="keyword" value="DIBERIKAN KEPADA">
+                <div class="form-text">Enter the keyword that appears before the name in your PDF.</div>
+            </div>
+            
+            <div class="d-flex justify-content-between">
+                <a href="{{ url_for('clear_session') }}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-2"></i> Back
+                </a>
+                <button type="submit" class="btn btn-primary" id="process-btn">
+                    <i class="fas fa-play me-2"></i> Process PDF
+                </button>
+            </div>
+        </form>
+        
+        <div class="progress-container mt-4">
+            <div class="progress">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+            </div>
+            <p class="mt-2 text-center" id="progress-text">Processing...</p>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-light">
+        <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i> How It Works</h5>
+    </div>
+    <div class="card-body">
+        <ol>
+            <li><strong>Split Size:</strong> Determines how many pages will be in each output file.</li>
+            <li><strong>Keyword:</strong> The system will look for this keyword in each split section.</li>
+            <li><strong>Name Extraction:</strong> The name will be extracted from the line before the keyword.</li>
+            <li><strong>Auto-Rename:</strong> Each split file will be named using the extracted name.</li>
+        </ol>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const configForm = document.getElementById('config-form');
+        const processBtn = document.getElementById('process-btn');
+        const progressContainer = document.querySelector('.progress-container');
+        const progressBar = document.querySelector('.progress-bar');
+        const progressText = document.getElementById('progress-text');
+        
+        // PDF Preview functionality
+        const togglePreviewBtn = document.getElementById('toggle-preview-btn');
+        const closePreviewBtn = document.getElementById('close-preview-btn');
+        const previewContainer = document.getElementById('pdf-preview-container');
+        const pdfIframe = document.getElementById('pdf-iframe');
+        const loadingIndicator = document.getElementById('pdf-loading');
+        
+        // Toggle PDF preview
+        togglePreviewBtn.addEventListener('click', function(e) {
+            e.preventDefault(); // Prevent default action
+            
+            if (previewContainer.style.display === 'none') {
+                previewContainer.style.display = 'block';
+                loadingIndicator.style.display = 'block';
+                
+                // Set the iframe source to the PDF URL with timestamp to prevent caching
+                const timestamp = new Date().getTime();
+                pdfIframe.src = `/pdf/{{ filename }}?t=${timestamp}`;
+                
+                // Hide loading indicator and show iframe when loaded
+                pdfIframe.onload = function() {
+                    loadingIndicator.style.display = 'none';
+                    pdfIframe.style.display = 'block';
+                };
+                
+                // Handle errors
+                pdfIframe.onerror = function() {
+                    loadingIndicator.style.display = 'none';
+                    alert('Failed to load PDF preview. Please try again.');
+                };
+            } else {
+                previewContainer.style.display = 'none';
+                pdfIframe.src = '';
+            }
+        });
+        
+        // Close preview button
+        closePreviewBtn.addEventListener('click', function() {
+            previewContainer.style.display = 'none';
+            pdfIframe.src = '';
+        });
+        
+        // Form submission
+        configForm.addEventListener('submit', function(e) {
+            // Show processing animation
+            processBtn.disabled = true;
+            progressContainer.style.display = 'block';
+            
+            // Simulate progress for better UX
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 2;
+                if (progress > 95) {
+                    clearInterval(interval);
+                }
+                progressBar.style.width = progress + '%';
+                progressText.textContent = 'Processing... ' + progress + '%';
+            }, 300);
+        });
+    });
+</script>
+{% endblock %} 
