@@ -19,9 +19,15 @@ echo "Creating necessary directories..."
 mkdir -p uploads outputs
 chmod 777 uploads outputs
 
+# Disable problematic repository
+echo "Disabling problematic repositories..."
+if [ -d "/etc/apt/sources.list.d" ]; then
+  sudo find /etc/apt/sources.list.d -name "*speedtest*" -exec sudo mv {} {}.disabled \; 2>/dev/null || echo "No speedtest repositories found"
+fi
+
 # Update system with error handling
 echo "Updating system packages..."
-sudo apt-get update || echo "Warning: apt-get update encountered errors, continuing anyway..."
+sudo apt-get update -o Acquire::AllowInsecureRepositories=false || echo "Warning: apt-get update encountered errors, continuing anyway..."
 sudo apt-get upgrade -y || echo "Warning: apt-get upgrade encountered errors, continuing anyway..."
 
 # Install required packages
