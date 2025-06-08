@@ -3,17 +3,30 @@
 {% block title %}Configure PDF Split - PDF Splitter & Auto Renamer{% endblock %}
 
 {% block content %}
+<!-- Configuration Instructions -->
+<div class="instruction-block mb-4">
+    <h5><i class="fas fa-sliders-h me-2"></i>Configuration Options</h5>
+    <p class="mb-2">Set how your PDF will be split and renamed. Preview your PDF to help determine the right settings.</p>
+</div>
+
 <div class="card mb-4">
-    <div class="card-header bg-primary text-white">
-        <h4 class="mb-0"><i class="fas fa-cogs me-2"></i> Configure PDF Split</h4>
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-cogs me-2"></i>Configure PDF Split</h5>
+            <span class="badge bg-primary">{{ total_pages }} pages</span>
+        </div>
     </div>
     <div class="card-body">
         <div class="file-info mb-4">
-            <h5><i class="fas fa-file-pdf me-2"></i> {{ filename }}</h5>
-            <p class="mb-0">Total Pages: <strong>{{ total_pages }}</strong></p>
-            <button class="btn btn-sm btn-outline-primary mt-2" id="toggle-preview-btn">
-                <i class="fas fa-eye me-1"></i> Toggle PDF Preview
-            </button>
+            <div class="d-flex align-items-center">
+                <i class="fas fa-file-pdf me-2 text-primary" style="font-size: 1.5rem;"></i>
+                <div>
+                    <h5 class="mb-0">{{ filename }}</h5>
+                    <button class="btn btn-sm btn-outline-primary mt-2" id="toggle-preview-btn">
+                        <i class="fas fa-eye me-1"></i> Preview PDF
+                    </button>
+                </div>
+            </div>
         </div>
         
         <!-- PDF Preview Section -->
@@ -23,25 +36,36 @@
                     <i class="fas fa-times"></i> Close Preview
                 </button>
             </div>
-            <div id="pdf-loading" class="loading-spinner" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);"></div>
-            <iframe id="pdf-iframe" style="width: 100%; height: 500px; border: 1px solid #ddd; border-radius: 5px; display: none;" allowfullscreen></iframe>
+            <div id="pdf-loading" class="loading-spinner"></div>
+            <iframe id="pdf-iframe" style="width: 100%; height: 500px; border: 1px solid var(--border-color); border-radius: var(--border-radius); display: none;" allowfullscreen></iframe>
         </div>
         
         <form action="{{ url_for('process') }}" method="post" id="config-form">
-            <div class="mb-3">
-                <label for="split_size" class="form-label">Split Size (pages per file):</label>
-                <input type="number" class="form-control" id="split_size" name="split_size" min="1" max="{{ total_pages }}" value="2" required>
-                <div class="form-text">Enter how many pages should be in each split file.</div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="split_size" class="form-label">Pages per file:</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control" id="split_size" name="split_size" min="1" max="{{ total_pages }}" value="1" required>
+                        <span class="input-group-text">page(s)</span>
+                    </div>
+                    <small class="text-muted">How many pages should be in each output file?</small>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="keyword" class="form-label">Name detection keyword:</label>
+                    <input type="text" class="form-control" id="keyword" name="keyword" value="DIBERIKAN KEPADA">
+                    <small class="text-muted">Text that appears before or near the name in your PDF</small>
+                </div>
             </div>
             
-            <div class="mb-3">
-                <label for="keyword" class="form-label">Name Identification Keyword:</label>
-                <input type="text" class="form-control" id="keyword" name="keyword" value="DIBERIKAN KEPADA">
-                <div class="form-text">Enter the keyword that appears before the name in your PDF.</div>
+            <!-- How It Works Quick Info -->
+            <div class="alert alert-light border mb-4">
+                <h6 class="mb-2"><i class="fas fa-info-circle me-2"></i>How Name Detection Works</h6>
+                <p class="mb-0 small">The system looks for your keyword (e.g., "DIBERIKAN KEPADA") and uses the text right before it as the filename. This works best when each certificate or document has a consistent format.</p>
             </div>
             
             <div class="d-flex justify-content-between">
-                <a href="{{ url_for('clear_session') }}" class="btn btn-secondary">
+                <a href="{{ url_for('clear_session') }}" class="btn btn-outline-secondary">
                     <i class="fas fa-arrow-left me-2"></i> Back
                 </a>
                 <button type="submit" class="btn btn-primary" id="process-btn">
@@ -59,19 +83,344 @@
     </div>
 </div>
 
+<!-- Example Section -->
 <div class="card">
-    <div class="card-header bg-light">
-        <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i> How It Works</h5>
+    <div class="card-header">
+        <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Configuration Tips</h5>
     </div>
     <div class="card-body">
-        <ol>
-            <li><strong>Split Size:</strong> Determines how many pages will be in each output file.</li>
-            <li><strong>Keyword:</strong> The system will look for this keyword in each split section.</li>
-            <li><strong>Name Extraction:</strong> The name will be extracted from the line before the keyword.</li>
-            <li><strong>Auto-Rename:</strong> Each split file will be named using the extracted name.</li>
-        </ol>
+        <div class="row">
+            <div class="col-md-6">
+                <h6><i class="fas fa-file-alt me-2"></i>Certificate Example</h6>
+                <ul class="small">
+                    <li>If splitting certificates, set <strong>Pages per file: 1</strong></li>
+                    <li>For keyword, use text like <strong>"DIBERIKAN KEPADA"</strong> or <strong>"CERTIFICATE"</strong></li>
+                    <li>This will name each file after the recipient's name</li>
+                </ul>
+            </div>
+            <div class="col-md-6">
+                <h6><i class="fas fa-file-contract me-2"></i>Document Example</h6>
+                <ul class="small">
+                    <li>For multi-page contracts, set appropriate page count</li>
+                    <li>Use keywords like <strong>"AGREEMENT BETWEEN"</strong> or <strong>"CONTRACT"</strong></li>
+                    <li>Preview your PDF first to find the best keyword</li>
+                </ul>
+            </div>
+        </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Animated badge */
+    .badge {
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .badge:after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        animation: shimmer 2s infinite;
+    }
+    
+    @keyframes shimmer {
+        0% { left: -100%; }
+        100% { left: 100%; }
+    }
+    
+    /* Preview button hover effect */
+    #toggle-preview-btn {
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    #toggle-preview-btn:after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: 0.5s;
+    }
+    
+    #toggle-preview-btn:hover:after {
+        left: 100%;
+    }
+    
+    /* Process button animation */
+    #process-btn {
+        transition: all 0.3s ease;
+    }
+    
+    #process-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+    }
+    
+    #process-btn:active {
+        transform: translateY(0);
+    }
+    
+    /* Card animations */
+    .card {
+        transition: all 0.3s ease;
+    }
+    
+    .alert {
+        animation: fadeIn 0.5s ease-out;
+    }
+    
+    /* Animated tips */
+    .card h6 i {
+        transition: all 0.3s ease;
+    }
+    
+    .card h6:hover i {
+        transform: translateX(3px);
+        color: var(--primary-color);
+    }
+    
+    /* Form controls animation */
+    .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.25rem rgba(52, 152, 219, 0.25);
+        animation: pulse 1.5s;
+    }
+    
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.5); }
+        70% { box-shadow: 0 0 0 6px rgba(52, 152, 219, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0); }
+    }
+    
+    /* Input group animation */
+    .input-group {
+        transition: all 0.3s ease;
+    }
+    
+    .input-group:hover {
+        transform: translateY(-2px);
+    }
+    
+    /* Configuration tips animation - removing slide */
+    .card ul li {
+        transition: all 0.3s ease;
+        position: relative;
+    }
+    
+    .card ul li:hover {
+        opacity: 0.85;
+        color: var(--primary-color);
+    }
+    
+    /* Dark mode fixes */
+    [data-theme="dark"] .file-info {
+        background-color: var(--card-bg);
+        border-color: var(--border-color);
+    }
+    
+    [data-theme="dark"] .pdf-preview-container {
+        background-color: var(--card-bg);
+        border-color: var(--border-color);
+    }
+    
+    [data-theme="dark"] .input-group-text {
+        color: var(--text-color);
+        background-color: var(--card-header-bg);
+        border-color: var(--input-border);
+    }
+    
+    [data-theme="dark"] .form-control {
+        color: var(--text-color);
+        background-color: var(--input-bg);
+        border-color: var(--input-border);
+    }
+    
+    [data-theme="dark"] .form-control:focus {
+        background-color: var(--input-bg);
+        box-shadow: 0 0 0 0.25rem rgba(96, 165, 250, 0.25);
+    }
+    
+    [data-theme="dark"] small.text-muted {
+        color: var(--text-muted) !important;
+    }
+    
+    [data-theme="dark"] .alert-light {
+        background-color: var(--instruction-bg);
+        border-color: var(--border-color);
+    }
+    
+    [data-theme="dark"] #pdf-iframe {
+        border-color: var(--border-color);
+    }
+    
+    /* Fixed Processing animation colors */
+    [data-theme="dark"] .processing {
+        background-color: var(--primary-color);
+        border-color: var(--primary-hover);
+    }
+    
+    [data-theme="dark"] .badge.bg-primary {
+        background-color: var(--badge-bg) !important;
+        color: var(--badge-text);
+    }
+    
+    /* Enhanced text brightness and contrast */
+    [data-theme="dark"] .file-info h5 {
+        color: #ffffff !important;
+        font-weight: 600;
+    }
+    
+    [data-theme="dark"] .card-header h5 {
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .form-label {
+        color: #ffffff !important;
+        font-weight: 500;
+    }
+    
+    [data-theme="dark"] .alert h6 {
+        color: #ffffff !important;
+    }
+    
+    [data-theme="dark"] .alert p {
+        color: #ffffff !important;
+    }
+    
+    /* Configuration tips better contrast */
+    [data-theme="dark"] .card h6 {
+        color: #ffffff !important;
+        font-weight: 600;
+    }
+    
+    [data-theme="dark"] .card ul li strong {
+        color: #ffffff !important;
+        font-weight: 600;
+    }
+    
+    /* Loading indicator better visibility */
+    [data-theme="dark"] .loading-spinner {
+        border-color: rgba(255, 255, 255, 0.2);
+        border-left-color: var(--primary-color);
+    }
+    
+    /* Mobile responsive enhancements */
+    @media (max-width: 768px) {
+        /* Better form layout for mobile */
+        .row > .col-md-6 {
+            margin-bottom: 0.75rem !important;
+        }
+        
+        /* Adjust file info display */
+        .file-info {
+            padding: 0.75rem;
+        }
+        
+        .file-info h5 {
+            font-size: 1.1rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        /* Adjust buttons for mobile */
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+        }
+        
+        /* Better preview container for mobile */
+        .pdf-preview-container {
+            max-height: 350px;
+        }
+        
+        /* Adjust form elements for mobile */
+        .form-label {
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        small.text-muted {
+            font-size: 0.75rem;
+        }
+        
+        /* Fix config tips for mobile */
+        .card h6 {
+            font-size: 0.95rem;
+        }
+        
+        .card ul.small li {
+            font-size: 0.8rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        /* Better alert layout */
+        .alert {
+            padding: 0.75rem;
+        }
+        
+        .alert h6 {
+            font-size: 0.95rem;
+            margin-bottom: 0.35rem;
+        }
+        
+        .alert p.small {
+            font-size: 0.8rem;
+            margin-bottom: 0;
+        }
+        
+        /* Adjust buttons in container bottom */
+        .d-flex.justify-content-between {
+            gap: 0.5rem;
+        }
+    }
+    
+    /* Extra small devices */
+    @media (max-width: 576px) {
+        /* Single column form layout */
+        .row > .col-md-6 {
+            width: 100%;
+        }
+        
+        /* Reduce badge size */
+        .badge {
+            font-size: 0.7rem;
+            padding: 0.25rem 0.5rem;
+        }
+        
+        /* Further optimize for very small screens */
+        .card-header h5 {
+            font-size: 1rem;
+        }
+        
+        /* Center the file info on small devices */
+        .file-info .d-flex {
+            flex-direction: column;
+            text-align: center;
+        }
+        
+        .file-info .d-flex i {
+            margin-right: 0 !important;
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Fix button spacing */
+        #toggle-preview-btn {
+            display: block;
+            width: 100%;
+            margin-top: 0.5rem;
+        }
+    }
+</style>
 {% endblock %}
 
 {% block scripts %}
@@ -90,12 +439,29 @@
         const pdfIframe = document.getElementById('pdf-iframe');
         const loadingIndicator = document.getElementById('pdf-loading');
         
-        // Toggle PDF preview
+        // Add pulse animation to file icon
+        const fileIcon = document.querySelector('.fas.fa-file-pdf');
+        if (fileIcon) {
+            fileIcon.classList.add('animated-icon');
+        }
+        
+        // Staggered animation for tips
+        const tipItems = document.querySelectorAll('.card ul li');
+        tipItems.forEach((item, index) => {
+            item.style.opacity = '0';
+            item.style.animation = `fadeIn 0.5s ease-out forwards`;
+            item.style.animationDelay = `${0.1 * (index + 1)}s`;
+        });
+        
+        // Toggle PDF preview with animation
         togglePreviewBtn.addEventListener('click', function(e) {
             e.preventDefault(); // Prevent default action
             
             if (previewContainer.style.display === 'none') {
+                // Show container with animation
+                previewContainer.style.opacity = '0';
                 previewContainer.style.display = 'block';
+                previewContainer.style.animation = 'fadeIn 0.5s forwards';
                 loadingIndicator.style.display = 'block';
                 
                 // Set the iframe source to the PDF URL with timestamp to prevent caching
@@ -106,6 +472,8 @@
                 pdfIframe.onload = function() {
                     loadingIndicator.style.display = 'none';
                     pdfIframe.style.display = 'block';
+                    pdfIframe.style.opacity = '0';
+                    pdfIframe.style.animation = 'fadeIn 0.5s forwards';
                 };
                 
                 // Handle errors
@@ -113,23 +481,43 @@
                     loadingIndicator.style.display = 'none';
                     alert('Failed to load PDF preview. Please try again.');
                 };
+                
+                // Change button text
+                togglePreviewBtn.innerHTML = '<i class="fas fa-eye-slash me-1"></i> Hide Preview';
             } else {
-                previewContainer.style.display = 'none';
-                pdfIframe.src = '';
+                // Hide with animation
+                previewContainer.style.animation = 'fadeOut 0.3s forwards';
+                setTimeout(() => {
+                    previewContainer.style.display = 'none';
+                    pdfIframe.src = '';
+                }, 300);
+                
+                // Reset button text
+                togglePreviewBtn.innerHTML = '<i class="fas fa-eye me-1"></i> Preview PDF';
             }
         });
         
         // Close preview button
         closePreviewBtn.addEventListener('click', function() {
-            previewContainer.style.display = 'none';
-            pdfIframe.src = '';
+            previewContainer.style.animation = 'fadeOut 0.3s forwards';
+            setTimeout(() => {
+                previewContainer.style.display = 'none';
+                pdfIframe.src = '';
+            }, 300);
+            
+            // Reset button text
+            togglePreviewBtn.innerHTML = '<i class="fas fa-eye me-1"></i> Preview PDF';
         });
         
         // Form submission
         configForm.addEventListener('submit', function(e) {
             // Show processing animation
             processBtn.disabled = true;
+            processBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Processing...';
+            processBtn.classList.add('processing');
             progressContainer.style.display = 'block';
+            progressContainer.style.opacity = '0';
+            progressContainer.style.animation = 'fadeIn 0.5s forwards';
             
             // Simulate progress for better UX
             let progress = 0;
@@ -142,6 +530,16 @@
                 progressText.textContent = 'Processing... ' + progress + '%';
             }, 300);
         });
+        
+        // Add keyframe animation for @keyframes fadeOut
+        const style = document.createElement('style');
+        style.innerHTML = `
+            @keyframes fadeOut {
+                from { opacity: 1; }
+                to { opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
     });
 </script>
 {% endblock %} 

@@ -3,11 +3,12 @@ import re
 import uuid
 import shutil
 import zipfile
-from datetime import datetime
+import threading
+import time
+from datetime import datetime, timedelta
 from flask import Flask, render_template, request, redirect, url_for, flash, send_file, jsonify, session
 from werkzeug.utils import secure_filename
 import fitz  # PyMuPDF
-import time
 
 # Create Flask app
 app = Flask(__name__)
@@ -19,6 +20,8 @@ app.config['ALLOWED_EXTENSIONS'] = {'pdf'}
 app.config['SESSION_COOKIE_SECURE'] = False  # Set to False to allow HTTP session
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # Increase to 100MB
 app.config['UPLOAD_CHUNK_SIZE'] = 4096  # Optimize chunk size for better performance
+app.config['CLEANUP_INTERVAL'] = 3600  # Run cleanup every hour (in seconds)
+app.config['FILE_EXPIRY_HOURS'] = 3  # Delete files after 3 hours
 
 # Create necessary folders
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -473,18 +476,52 @@ def clear_session():
     
     return redirect(url_for('index'))
 
-# Cleanup task - can be scheduled with a task scheduler
+# Cleanup task - runs in background
 def cleanup_old_files():
-    """Remove files older than 24 hours"""
+    """Remove files older than 3 hours"""
+    print(f"[{datetime.now()}] Running cleanup task - removing files older than {app.config['FILE_EXPIRY_HOURS']} hours")
     current_time = datetime.now()
     for folder in [app.config['UPLOAD_FOLDER'], app.config['OUTPUT_FOLDER']]:
         for item in os.listdir(folder):
             item_path = os.path.join(folder, item)
             if os.path.isdir(item_path):
                 # Check folder modification time
-                mod_time = datetime.fromtimestamp(os.path.getmtime(item_path))
-                if (current_time - mod_time).days >= 1:  # 24 hours
-                    shutil.rmtree(item_path)
+                try:
+                    mod_time = datetime.fromtimestamp(os.path.getmtime(item_path))
+                    time_diff = current_time - mod_time
+                    hours_diff = time_diff.total_seconds() / 3600
+                    
+                    if hours_diff >= app.config['FILE_EXPIRY_HOURS']:
+                        print(f"[{datetime.now()}] Removing old folder: {item_path} (age: {hours_diff:.1f} hours)")
+                        shutil.rmtree(item_path)
+                except Exception as e:
+                    print(f"[{datetime.now()}] Error cleaning up folder {item_path}: {str(e)}")
+
+# Background cleanup thread
+def cleanup_scheduler():
+    """Run cleanup task periodically in background"""
+    while True:
+        cleanup_old_files()
+        time.sleep(app.config['CLEANUP_INTERVAL'])
+
+# For Flask 2.x compatibility (before_first_request is deprecated)
+cleanup_thread = None
+
+def init_app(app):
+    """Initialize the application with background tasks"""
+    global cleanup_thread
+    
+    # Only start the thread once
+    if cleanup_thread is None or not cleanup_thread.is_alive():
+        cleanup_thread = threading.Thread(target=cleanup_scheduler)
+        cleanup_thread.daemon = True
+        cleanup_thread.start()
+        print(f"[{datetime.now()}] Started automatic cleanup thread (interval: {app.config['CLEANUP_INTERVAL']} seconds)")
+        
+        # Run initial cleanup
+        initial_cleanup = threading.Thread(target=cleanup_old_files)
+        initial_cleanup.daemon = True
+        initial_cleanup.start()
 
 @app.route('/debug_session')
 def debug_session():
@@ -504,6 +541,9 @@ def get_upload_progress(session_id):
     return jsonify({'progress': 0})
 
 if __name__ == '__main__':
+    # Initialize app with cleanup thread
+    init_app(app)
+    
     # For development only - use a production WSGI server for deployment
     # Use host='0.0.0.0' to make the app accessible on your local network
     app.run(debug=True, host='0.0.0.0', port=5000) 
