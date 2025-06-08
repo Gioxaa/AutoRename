@@ -160,6 +160,65 @@
     .upload-icon {
         animation: float 3s ease-in-out infinite;
     }
+    
+    /* Enhanced progress bar styles */
+    .progress {
+        height: 20px;
+        background-color: #f0f0f0;
+        border-radius: 10px;
+        box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    
+    .progress-bar {
+        background-color: #4CAF50;
+        background-image: linear-gradient(45deg, 
+                          rgba(255,255,255,.15) 25%, 
+                          transparent 25%, 
+                          transparent 50%, 
+                          rgba(255,255,255,.15) 50%, 
+                          rgba(255,255,255,.15) 75%, 
+                          transparent 75%, 
+                          transparent);
+        background-size: 20px 20px;
+        transition: width 0.3s ease;
+    }
+    
+    .progress-container {
+        display: none;
+        margin-top: 20px;
+    }
+    
+    #progress-text {
+        font-size: 14px;
+        color: #555;
+        margin-top: 8px;
+        text-align: center;
+    }
+    
+    .upload-container {
+        background-color: #f8f9fa;
+        border: 2px dashed #ddd;
+        border-radius: 15px;
+        padding: 30px;
+        text-align: center;
+        transition: all 0.3s ease;
+        margin-bottom: 30px;
+    }
+    
+    .upload-container:hover {
+        border-color: #4CAF50;
+    }
+    
+    .upload-container.bg-light {
+        background-color: #e9ecef !important;
+        border-color: #4CAF50;
+    }
+    
+    .upload-icon i {
+        font-size: 4rem;
+        color: #4CAF50;
+    }
 </style>
 {% endblock %}
 
@@ -252,6 +311,22 @@
             browseBtn.style.display = 'none';
         }
         
+        // Helper function to format file size
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' bytes';
+            else if (bytes < 1048576) return (bytes / 1024).toFixed(2) + ' KB';
+            else return (bytes / 1048576).toFixed(2) + ' MB';
+        }
+        
+        // Helper function to calculate upload speed
+        function calculateSpeed(loaded, startTime) {
+            const elapsed = (Date.now() - startTime) / 1000; // seconds
+            const speed = loaded / elapsed; // bytes per second
+            if (speed < 1024) return speed.toFixed(2) + ' B/s';
+            else if (speed < 1048576) return (speed / 1024).toFixed(2) + ' KB/s';
+            else return (speed / 1048576).toFixed(2) + ' MB/s';
+        }
+        
         function uploadFileWithProgress(file) {
             showProgress();
             
@@ -261,17 +336,35 @@
             
             // Use XHR for better control over upload progress
             const xhr = new XMLHttpRequest();
+            const startTime = Date.now();
+            let lastLoaded = 0;
+            let lastTime = startTime;
+            let currentSpeed = '0 KB/s';
             
             // Setup upload progress handler
             xhr.upload.addEventListener('progress', function(e) {
                 if (e.lengthComputable) {
                     const percentComplete = Math.min(Math.round((e.loaded / e.total) * 100), 95);
                     progressBar.style.width = percentComplete + '%';
-                    progressText.textContent = 'Uploading... ' + percentComplete + '%';
+                    
+                    // Calculate speed every second to avoid rapid UI changes
+                    const now = Date.now();
+                    if (now - lastTime > 500) { // Update speed every 500ms
+                        currentSpeed = calculateSpeed(e.loaded - lastLoaded, now - lastTime);
+                        lastLoaded = e.loaded;
+                        lastTime = now;
+                    }
+                    
+                    // Format progress text with file size and speed
+                    const loadedSize = formatFileSize(e.loaded);
+                    const totalSize = formatFileSize(e.total);
+                    
+                    // Display detailed progress information
+                    progressText.innerHTML = `<strong>${percentComplete}%</strong> · ${loadedSize} of ${totalSize} · <span style="color:#4CAF50">${currentSpeed}</span>`;
                     
                     // Start "Processing..." message at 95%
                     if (percentComplete >= 95) {
-                        progressText.textContent = 'Processing... Please wait';
+                        progressText.innerHTML = `<strong>Processing...</strong> ${loadedSize} of ${totalSize} · Please wait`;
                     }
                 }
             });
@@ -279,10 +372,16 @@
             // Setup completion handler
             xhr.addEventListener('load', function() {
                 if (xhr.status === 200 || xhr.status === 302) {
-                    // Redirect to the configure page
-                    window.location.href = "{{ url_for('configure') }}";
+                    // Show 100% complete before redirecting
+                    progressBar.style.width = '100%';
+                    progressText.innerHTML = '<strong>Upload complete!</strong> Redirecting...';
+                    
+                    // Add small delay before redirect for better UX
+                    setTimeout(() => {
+                        window.location.href = "{{ url_for('configure') }}";
+                    }, 800);
                 } else {
-                    progressText.textContent = 'Upload failed. Please try again.';
+                    progressText.innerHTML = '<strong style="color:#F44336">Upload failed.</strong> Please try again.';
                     progressBar.style.width = '0%';
                     setTimeout(() => {
                         progressContainer.style.display = 'none';
@@ -293,7 +392,17 @@
             
             // Setup error handler
             xhr.addEventListener('error', function() {
-                progressText.textContent = 'Upload failed. Please try again.';
+                progressText.innerHTML = '<strong style="color:#F44336">Connection error.</strong> Please check your network.';
+                progressBar.style.width = '0%';
+                setTimeout(() => {
+                    progressContainer.style.display = 'none';
+                    browseBtn.style.display = 'inline-block';
+                }, 3000);
+            });
+            
+            // Handle timeout
+            xhr.addEventListener('timeout', function() {
+                progressText.innerHTML = '<strong style="color:#F44336">Upload timeout.</strong> File may be too large.';
                 progressBar.style.width = '0%';
                 setTimeout(() => {
                     progressContainer.style.display = 'none';
@@ -302,6 +411,7 @@
             });
             
             // Open connection and send the file
+            xhr.timeout = 300000; // 5 minutes timeout
             xhr.open('POST', "{{ url_for('upload_file') }}", true);
             xhr.send(formData);
         }
