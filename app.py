@@ -5,10 +5,14 @@ import shutil
 import zipfile
 import threading
 import time
+import hashlib
 from datetime import datetime, timedelta
 from flask import Flask, render_template, request, redirect, url_for, flash, send_file, jsonify, session
+from flask_caching import Cache
 from werkzeug.utils import secure_filename
 import fitz  # PyMuPDF
+from PIL import Image
+import io
 
 # Create Flask app
 app = Flask(__name__)
@@ -16,16 +20,28 @@ app.secret_key = os.environ.get('SECRET_KEY', 'dev_key_for_testing')
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max upload size
 app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
 app.config['OUTPUT_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'outputs')
+app.config['CACHE_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cache')
 app.config['ALLOWED_EXTENSIONS'] = {'pdf'}
 app.config['SESSION_COOKIE_SECURE'] = False  # Set to False to allow HTTP session
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # Increase to 100MB
 app.config['UPLOAD_CHUNK_SIZE'] = 4096  # Optimize chunk size for better performance
 app.config['CLEANUP_INTERVAL'] = 3600  # Run cleanup every hour (in seconds)
 app.config['FILE_EXPIRY_HOURS'] = 3  # Delete files after 3 hours
+app.config['CACHE_TYPE'] = 'filesystem'
+app.config['CACHE_DIR'] = app.config['CACHE_FOLDER']
+app.config['CACHE_DEFAULT_TIMEOUT'] = 3600  # 1 hour cache timeout
+app.config['CACHE_THRESHOLD'] = 1000  # Maximum number of items in cache
+app.config['PDF_PREVIEW_DPI'] = 150  # DPI for PDF preview images
+app.config['PDF_PREVIEW_QUALITY'] = 85  # JPEG quality for preview images
+app.config['PRE_RENDER_PAGES'] = 3  # Number of pages to pre-render
 
 # Create necessary folders
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
+os.makedirs(app.config['CACHE_FOLDER'], exist_ok=True)
+
+# Initialize cache
+cache = Cache(app)
 
 # Tambahkan dictionary global untuk menyimpan status upload
 upload_progress = {}
@@ -478,9 +494,11 @@ def clear_session():
 
 # Cleanup task - runs in background
 def cleanup_old_files():
-    """Remove files older than 3 hours"""
+    """Remove files older than 3 hours and clean expired cache"""
     print(f"[{datetime.now()}] Running cleanup task - removing files older than {app.config['FILE_EXPIRY_HOURS']} hours")
     current_time = datetime.now()
+    
+    # Clean session folders
     for folder in [app.config['UPLOAD_FOLDER'], app.config['OUTPUT_FOLDER']]:
         for item in os.listdir(folder):
             item_path = os.path.join(folder, item)
@@ -496,6 +514,27 @@ def cleanup_old_files():
                         shutil.rmtree(item_path)
                 except Exception as e:
                     print(f"[{datetime.now()}] Error cleaning up folder {item_path}: {str(e)}")
+    
+    # Clean cache files older than 12 hours
+    cache_folder = app.config['CACHE_FOLDER']
+    if os.path.exists(cache_folder):
+        cache_expiry_hours = 12  # Cache files can live longer than uploads
+        for item in os.listdir(cache_folder):
+            item_path = os.path.join(cache_folder, item)
+            if os.path.isfile(item_path):
+                try:
+                    mod_time = datetime.fromtimestamp(os.path.getmtime(item_path))
+                    time_diff = current_time - mod_time
+                    hours_diff = time_diff.total_seconds() / 3600
+                    
+                    if hours_diff >= cache_expiry_hours:
+                        print(f"[{datetime.now()}] Removing old cache file: {item_path} (age: {hours_diff:.1f} hours)")
+                        os.remove(item_path)
+                except Exception as e:
+                    print(f"[{datetime.now()}] Error cleaning up cache file {item_path}: {str(e)}")
+    
+    # Clean expired flask-cache entries (will happen automatically by flask-cache)
+    print(f"[{datetime.now()}] Cleanup task completed")
 
 # Background cleanup thread
 def cleanup_scheduler():
@@ -539,6 +578,145 @@ def get_upload_progress(session_id):
     if session_id in upload_progress:
         return jsonify(upload_progress[session_id])
     return jsonify({'progress': 0})
+
+def get_pdf_page_hash(file_path, page_num, dpi):
+    """Create a unique hash for caching a PDF page"""
+    file_hash = hashlib.md5(open(file_path, 'rb').read(1024*1024)).hexdigest()  # Hash first 1MB only for speed
+    return f"{file_hash}_page{page_num}_dpi{dpi}"
+
+@app.route('/pdf_preview/<path:session_id>/<int:page_num>')
+def pdf_preview(session_id, page_num):
+    """Serve a rendered page of a PDF as an image for faster preview"""
+    print(f"PDF Preview request for session {session_id}, page {page_num}")
+    
+    # Don't validate session for preview to avoid issues
+    # This is ok because we're only showing preview of the user's own uploaded file
+    try:
+        # Get PDF path
+        session_upload_folder = os.path.join(app.config['UPLOAD_FOLDER'], session_id)
+        pdf_path = None
+        
+        # Check if folder exists
+        if not os.path.exists(session_upload_folder):
+            print(f"Error: Upload folder does not exist: {session_upload_folder}")
+            return jsonify({'error': 'Session folder not found'}), 404
+        
+        print(f"Looking for PDF in {session_upload_folder}")
+        for file in os.listdir(session_upload_folder):
+            file_path = os.path.join(session_upload_folder, file)
+            if os.path.isfile(file_path) and file.lower().endswith('.pdf'):
+                pdf_path = file_path
+                print(f"Found PDF: {file_path}")
+                break
+        
+        if not pdf_path:
+            print(f"Error: No PDF found in session folder")
+            return jsonify({'error': 'PDF file not found'}), 404
+        
+        # Convert page number to 0-indexed
+        page_idx = max(0, page_num - 1)
+        
+        # Open PDF and get page
+        doc = fitz.open(pdf_path)
+        if page_idx >= len(doc):
+            print(f"Error: Page number {page_num} out of range (total pages: {len(doc)})")
+            return jsonify({'error': 'Page number out of range'}), 404
+        
+        print(f"Rendering page {page_num} of {len(doc)}")
+        page = doc[page_idx]
+        
+        # Render page to image with specified DPI
+        dpi = app.config['PDF_PREVIEW_DPI']
+        zoom = dpi / 72
+        mat = fitz.Matrix(zoom, zoom)
+        pix = page.get_pixmap(matrix=mat)
+        
+        # Direct method: Convert to PNG (more reliable than JPEG conversion)
+        print(f"Converting page to PNG image (size: {pix.width}x{pix.height})")
+        img_bytes = pix.tobytes("png")
+        
+        # Close document
+        doc.close()
+        
+        # Create response with appropriate headers
+        response = send_file(
+            io.BytesIO(img_bytes),
+            mimetype='image/png',
+            as_attachment=False,
+            download_name=f"page_{page_num}.png"
+        )
+        
+        # Add cache headers
+        response.headers['Cache-Control'] = 'public, max-age=86400'  # Cache for 24 hours
+        
+        # Add CORS headers to prevent issues
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+        
+        print(f"Successfully rendered page {page_num}")
+        return response
+    
+    except Exception as e:
+        import traceback
+        print(f"Error rendering PDF preview: {str(e)}")
+        traceback.print_exc()
+        response = jsonify({'error': str(e)})
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        return response, 500
+
+def get_session_pdf_path():
+    """Helper function to get the current session's PDF path"""
+    if 'session_id' not in session or 'uploaded_file' not in session:
+        return None
+    
+    return session.get('uploaded_file')
+
+@app.route('/pdf_metadata/<path:session_id>')
+@cache.cached(timeout=3600)
+def pdf_metadata(session_id):
+    """Get PDF metadata including total pages for client-side rendering"""
+    if 'session_id' not in session or session.get('session_id') != session_id:
+        return jsonify({'error': 'Invalid session or session expired'}), 403
+    
+    try:
+        # Get PDF path
+        pdf_path = get_session_pdf_path()
+        if not pdf_path:
+            return jsonify({'error': 'PDF file not found'}), 404
+        
+        # Open PDF and get metadata
+        doc = fitz.open(pdf_path)
+        
+        # Basic metadata
+        metadata = {
+            'total_pages': len(doc),
+            'title': doc.metadata.get('title', ''),
+            'author': doc.metadata.get('author', ''),
+            'subject': doc.metadata.get('subject', ''),
+            'keywords': doc.metadata.get('keywords', ''),
+            'page_sizes': []
+        }
+        
+        # Get page sizes for the first 10 pages (for preview layout)
+        for i in range(min(10, len(doc))):
+            page = doc[i]
+            rect = page.rect
+            metadata['page_sizes'].append({
+                'width': rect.width,
+                'height': rect.height,
+                'aspect_ratio': rect.width / rect.height if rect.height else 1
+            })
+        
+        # Close document
+        doc.close()
+        
+        return jsonify(metadata)
+    
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     # Initialize app with cleanup thread

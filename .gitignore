@@ -32,10 +32,12 @@ instance/
 # Application specific
 uploads/*
 outputs/*
+cache/*
 *.log
 *.zip
 !uploads/.gitkeep
 !outputs/.gitkeep
+!cache/.gitkeep
 
 # IDE
 .idea/

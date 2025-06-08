@@ -22,9 +22,9 @@
                 <i class="fas fa-file-pdf me-2 text-primary" style="font-size: 1.5rem;"></i>
                 <div>
                     <h5 class="mb-0">{{ filename }}</h5>
-                    <button class="btn btn-sm btn-outline-primary mt-2" id="toggle-preview-btn">
+            <button class="btn btn-sm btn-outline-primary mt-2" id="toggle-preview-btn">
                         <i class="fas fa-eye me-1"></i> Preview PDF
-                    </button>
+            </button>
                 </div>
             </div>
         </div>
@@ -453,6 +453,320 @@
             item.style.animationDelay = `${0.1 * (index + 1)}s`;
         });
         
+        // PDF cache and enhanced preview system
+        let pdfMetadata = null;
+        let currentPage = 1;
+        let pagesCache = new Map();
+        let preloadingQueue = [];
+        let sessionId = '{{ session.get("session_id") }}';
+        
+        // Preload a range of pages
+        function preloadPageRange(startPage, endPage) {
+            preloadingQueue = [];
+            
+            for (let i = startPage; i <= endPage; i++) {
+                if (!pagesCache.has(i)) {
+                    preloadingQueue.push(i);
+                }
+            }
+            
+            // Start preloading next page
+            preloadNextPage();
+        }
+        
+        // Preload next page in queue
+        function preloadNextPage() {
+            if (preloadingQueue.length === 0) return;
+            
+            const pageNum = preloadingQueue.shift();
+            if (pagesCache.has(pageNum)) {
+                preloadNextPage(); // Skip if already cached
+                return;
+            }
+            
+            const img = new Image();
+            img.onload = function() {
+                pagesCache.set(pageNum, img.src);
+                console.log(`Preloaded page ${pageNum}`);
+                preloadNextPage(); // Continue with next page
+            };
+            img.src = `/pdf_preview/${sessionId}/${pageNum}?t=${new Date().getTime()}`;
+        }
+        
+        // Load PDF metadata
+        function loadPdfMetadata() {
+            fetch(`/pdf_metadata/${sessionId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        console.error('Error loading PDF metadata:', data.error);
+                        return;
+                    }
+                    
+                    pdfMetadata = data;
+                    console.log('PDF metadata loaded:', pdfMetadata);
+                    
+                    // Update total pages display
+                    const badgeElement = document.querySelector('.badge.bg-primary');
+                    if (badgeElement) {
+                        badgeElement.textContent = `${pdfMetadata.total_pages} pages`;
+                    }
+                    
+                    // Pre-cache first few pages
+                    preloadPageRange(1, Math.min(3, pdfMetadata.total_pages));
+                })
+                .catch(error => {
+                    console.error('Error fetching PDF metadata:', error);
+                });
+        }
+        
+        // Display a specific page
+        function displayPage(pageNum) {
+            if (!pdfMetadata || pageNum < 1 || pageNum > pdfMetadata.total_pages) {
+                return;
+            }
+            
+            currentPage = pageNum;
+            console.log(`Displaying page ${pageNum} of ${pdfMetadata.total_pages}`);
+            
+            // Show loading indicator while we fetch the page
+            loadingIndicator.style.display = 'block';
+            
+            // Check if page is cached
+            if (pagesCache.has(pageNum)) {
+                console.log(`Using cached page ${pageNum}`);
+                showCachedPage(pageNum);
+            } else {
+                console.log(`Loading page ${pageNum} from server`);
+                loadPageFromServer(pageNum);
+            }
+            
+            // Preload next pages
+            const startPreload = pageNum + 1;
+            const endPreload = Math.min(pageNum + 2, pdfMetadata.total_pages);
+            if (startPreload <= endPreload) {
+                preloadPageRange(startPreload, endPreload);
+            }
+            
+            // Update navigation buttons
+            updateNavButtons();
+        }
+        
+        // Show cached page
+        function showCachedPage(pageNum) {
+            // If using iframe, replace with optimized viewer
+            if (!document.getElementById('pdf-viewer')) {
+                createOptimizedViewer();
+            }
+            
+            const viewer = document.getElementById('pdf-viewer');
+            if (!viewer) {
+                console.error('PDF viewer element not found');
+                loadingIndicator.style.display = 'none';
+                return;
+            }
+            
+            console.log(`Showing cached page ${pageNum}`);
+            
+            // Display cached image
+            viewer.style.backgroundImage = `url('${pagesCache.get(pageNum)}')`;
+            viewer.setAttribute('data-page', pageNum);
+            
+            // Update page counter
+            const counter = document.getElementById('page-counter');
+            if (counter) {
+                counter.textContent = `Page ${pageNum} of ${pdfMetadata.total_pages}`;
+            }
+            
+            loadingIndicator.style.display = 'none';
+            console.log(`Page ${pageNum} displayed successfully`);
+        }
+        
+        // Load page from server
+        function loadPageFromServer(pageNum) {
+            loadingIndicator.style.display = 'block';
+            
+            // Create optimized viewer if not exists
+            if (!document.getElementById('pdf-viewer')) {
+                createOptimizedViewer();
+            }
+            
+            console.log(`Fetching page ${pageNum} from server`);
+            
+            // Add a timeout to prevent infinite loading
+            const fetchTimeout = setTimeout(() => {
+                console.log(`Fetch timeout for page ${pageNum} - falling back to iframe`);
+                // Show fallback
+                const viewer = document.getElementById('pdf-viewer');
+                if (viewer) {
+                    viewer.style.backgroundImage = 'none';
+                    viewer.innerHTML = '<div style="text-align: center; padding: 20px;">Timeout loading preview, falling back to standard viewer...</div>';
+                }
+                loadingIndicator.style.display = 'none';
+                
+                // Fall back to standard viewer after 1 second
+                setTimeout(() => {
+                    if (viewer) viewer.innerHTML = '';
+                    pdfIframe.style.display = 'block';
+                    if (pdfIframe.src === '') {
+                        const timestamp = new Date().getTime();
+                        pdfIframe.src = `/pdf/{{ filename }}?t=${timestamp}#page=${pageNum}`;
+                    }
+                }, 1000);
+            }, 6000); // 6 second timeout
+            
+            // Use fetch with explicit credentials to ensure session cookies are sent
+            fetch(`/pdf/{{ filename }}?t=${new Date().getTime()}`, {
+                method: 'HEAD',
+                credentials: 'same-origin'
+            })
+            .then(() => {
+                // Now fetch the preview
+                return fetch(`/pdf_preview/${sessionId}/${pageNum}?t=${new Date().getTime()}`, {
+                    credentials: 'same-origin'
+                });
+            })
+            .then(response => {
+                console.log(`Server response for page ${pageNum}:`, response.status, response.statusText);
+                if (!response.ok) {
+                    throw new Error(`Failed to load page ${pageNum}: ${response.status} ${response.statusText}`);
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                // Clear the timeout since we got a response
+                clearTimeout(fetchTimeout);
+                
+                console.log(`Received blob for page ${pageNum}:`, blob.type, `${Math.round(blob.size/1024)}KB`);
+                const url = URL.createObjectURL(blob);
+                pagesCache.set(pageNum, url);
+                showCachedPage(pageNum);
+            })
+            .catch(error => {
+                // Clear the timeout
+                clearTimeout(fetchTimeout);
+                
+                console.error(`Error loading page ${pageNum}:`, error);
+                loadingIndicator.style.display = 'none';
+                
+                // Show error message to user
+                const viewer = document.getElementById('pdf-viewer');
+                if (viewer) {
+                    viewer.style.backgroundImage = 'none';
+                    viewer.innerHTML = `<div class="error-message" style="padding: 20px; text-align: center; color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; margin: 20px;">
+                        <p><i class="fas fa-exclamation-triangle"></i> Error loading preview</p>
+                        <p>${error.message}</p>
+                        <p>Falling back to standard viewer...</p>
+                    </div>`;
+                    
+                    // Fallback to iframe after 2 seconds
+                    setTimeout(() => {
+                        // Fall back to standard PDF viewer
+                        if (viewer) viewer.innerHTML = '';
+                        pdfIframe.style.display = 'block';
+                        if (pdfIframe.src === '') {
+                            const timestamp = new Date().getTime();
+                            pdfIframe.src = `/pdf/{{ filename }}?t=${timestamp}#page=${pageNum}`;
+                        }
+                    }, 2000);
+                }
+            });
+        }
+        
+        // Create optimized viewer
+        function createOptimizedViewer() {
+            console.log('Creating optimized PDF viewer');
+            
+            // Hide iframe
+            pdfIframe.style.display = 'none';
+            
+            // Create viewer container
+            const viewerContainer = document.createElement('div');
+            viewerContainer.id = 'pdf-viewer-container';
+            viewerContainer.style.position = 'relative';
+            viewerContainer.style.width = '100%';
+            viewerContainer.style.marginTop = '10px';
+            
+            // Create image viewer
+            const viewer = document.createElement('div');
+            viewer.id = 'pdf-viewer';
+            viewer.style.width = '100%';
+            viewer.style.height = '500px';
+            viewer.style.backgroundSize = 'contain';
+            viewer.style.backgroundPosition = 'center';
+            viewer.style.backgroundRepeat = 'no-repeat';
+            viewer.style.border = '1px solid var(--border-color)';
+            viewer.style.borderRadius = 'var(--border-radius)';
+            viewer.style.backgroundColor = '#f5f5f5';
+            viewer.style.transition = 'background-image 0.2s ease-in-out';
+            
+            // Add to container
+            viewerContainer.appendChild(viewer);
+            
+            // Create navigation controls
+            const navControls = document.createElement('div');
+            navControls.className = 'pdf-nav-controls';
+            navControls.style.display = 'flex';
+            navControls.style.justifyContent = 'center';
+            navControls.style.alignItems = 'center';
+            navControls.style.marginTop = '10px';
+            navControls.style.gap = '10px';
+            
+            // Prev button
+            const prevBtn = document.createElement('button');
+            prevBtn.id = 'prev-page';
+            prevBtn.className = 'btn btn-sm btn-outline-secondary';
+            prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i> Previous';
+            prevBtn.onclick = function() {
+                displayPage(currentPage - 1);
+            };
+            
+            // Page counter
+            const pageCounter = document.createElement('span');
+            pageCounter.id = 'page-counter';
+            pageCounter.className = 'badge bg-light text-dark';
+            pageCounter.style.padding = '8px 12px';
+            
+            // Next button
+            const nextBtn = document.createElement('button');
+            nextBtn.id = 'next-page';
+            nextBtn.className = 'btn btn-sm btn-outline-secondary';
+            nextBtn.innerHTML = 'Next <i class="fas fa-chevron-right"></i>';
+            nextBtn.onclick = function() {
+                displayPage(currentPage + 1);
+            };
+            
+            // Add to navigation
+            navControls.appendChild(prevBtn);
+            navControls.appendChild(pageCounter);
+            navControls.appendChild(nextBtn);
+            
+            // Add to container
+            viewerContainer.appendChild(navControls);
+            
+            // Add to preview container before the loading indicator
+            if (loadingIndicator.parentNode) {
+                loadingIndicator.parentNode.insertBefore(viewerContainer, loadingIndicator);
+            } else {
+                previewContainer.insertBefore(viewerContainer, previewContainer.firstChild);
+            }
+            
+            console.log('Optimized viewer created');
+            // Update navigation
+            updateNavButtons();
+        }
+        
+        // Update navigation buttons state
+        function updateNavButtons() {
+            const prevBtn = document.getElementById('prev-page');
+            const nextBtn = document.getElementById('next-page');
+            
+            if (!prevBtn || !nextBtn) return;
+            
+            prevBtn.disabled = currentPage <= 1;
+            nextBtn.disabled = !pdfMetadata || currentPage >= pdfMetadata.total_pages;
+        }
+        
         // Toggle PDF preview with animation
         togglePreviewBtn.addEventListener('click', function(e) {
             e.preventDefault(); // Prevent default action
@@ -464,23 +778,41 @@
                 previewContainer.style.animation = 'fadeIn 0.5s forwards';
                 loadingIndicator.style.display = 'block';
                 
-                // Set the iframe source to the PDF URL with timestamp to prevent caching
+                // Reset the viewer state if needed
+                if (document.getElementById('pdf-viewer')) {
+                    const viewer = document.getElementById('pdf-viewer');
+                    if (viewer) {
+                        viewer.style.backgroundImage = 'none';
+                        viewer.innerHTML = '';
+                    }
+                }
+                
+                // Force iframe reset
+                pdfIframe.style.display = 'none';
+                pdfIframe.src = '';
+                
+                // Load metadata if needed
+                if (!pdfMetadata) {
+                    loadPdfMetadata();
+                }
+                
+                // Start a timeout to ensure we don't get stuck
+                setTimeout(() => {
+                    if (loadingIndicator.style.display === 'block') {
+                        console.log('Loading timeout - falling back to standard viewer');
+                        loadingIndicator.style.display = 'none';
+                        
+                        // Fall back to standard PDF viewer
+                        pdfIframe.style.display = 'block';
+                        if (pdfIframe.src === '') {
                 const timestamp = new Date().getTime();
                 pdfIframe.src = `/pdf/{{ filename }}?t=${timestamp}`;
+                        }
+                    }
+                }, 5000); // 5 second timeout
                 
-                // Hide loading indicator and show iframe when loaded
-                pdfIframe.onload = function() {
-                    loadingIndicator.style.display = 'none';
-                    pdfIframe.style.display = 'block';
-                    pdfIframe.style.opacity = '0';
-                    pdfIframe.style.animation = 'fadeIn 0.5s forwards';
-                };
-                
-                // Handle errors
-                pdfIframe.onerror = function() {
-                    loadingIndicator.style.display = 'none';
-                    alert('Failed to load PDF preview. Please try again.');
-                };
+                // Display first page
+                displayPage(1);
                 
                 // Change button text
                 togglePreviewBtn.innerHTML = '<i class="fas fa-eye-slash me-1"></i> Hide Preview';
@@ -488,8 +820,8 @@
                 // Hide with animation
                 previewContainer.style.animation = 'fadeOut 0.3s forwards';
                 setTimeout(() => {
-                    previewContainer.style.display = 'none';
-                    pdfIframe.src = '';
+                previewContainer.style.display = 'none';
+                    // Don't clear the cache, just hide the container
                 }, 300);
                 
                 // Reset button text
@@ -501,8 +833,8 @@
         closePreviewBtn.addEventListener('click', function() {
             previewContainer.style.animation = 'fadeOut 0.3s forwards';
             setTimeout(() => {
-                previewContainer.style.display = 'none';
-                pdfIframe.src = '';
+            previewContainer.style.display = 'none';
+                // Don't clear the cache, just hide the container
             }, 300);
             
             // Reset button text
@@ -537,6 +869,16 @@
             @keyframes fadeOut {
                 from { opacity: 1; }
                 to { opacity: 0; }
+            }
+            
+            @media (prefers-color-scheme: dark) {
+                #pdf-viewer {
+                    background-color: #333 !important;
+                }
+            }
+            
+            [data-theme="dark"] #pdf-viewer {
+                background-color: #333 !important;
             }
         `;
         document.head.appendChild(style);
