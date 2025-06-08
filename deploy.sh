@@ -39,6 +39,15 @@ echo "Installing Python dependencies..."
 pip3 install -r requirements.txt
 pip3 install gunicorn
 
+# Find available port
+echo "Checking for available port..."
+APP_PORT=5000
+while netstat -tuln | grep -q ":$APP_PORT"; do
+  echo "Port $APP_PORT is in use, trying next port..."
+  APP_PORT=$((APP_PORT + 1))
+done
+echo "Using port $APP_PORT for application"
+
 # Configure Nginx
 echo "Configuring Nginx..."
 sudo cat > /etc/nginx/sites-available/autorename << EOF
@@ -47,7 +56,7 @@ server {
     server_name _;
 
     location / {
-        proxy_pass http://localhost:8000;
+        proxy_pass http://localhost:$APP_PORT;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
     }
@@ -72,12 +81,15 @@ After=network.target
 [Service]
 User=$(whoami)
 WorkingDirectory=$(pwd)
-ExecStart=$(which gunicorn) --workers 3 --bind 127.0.0.1:8000 wsgi:app
+ExecStart=$(which gunicorn) --workers 3 --bind 127.0.0.1:$APP_PORT wsgi:app
 Restart=always
 
 [Install]
 WantedBy=multi-user.target
 EOF
+
+# Stop any existing service
+sudo systemctl stop autorename 2>/dev/null || echo "No existing service running"
 
 # Start and enable the service
 sudo systemctl daemon-reload
