@@ -10,12 +10,18 @@ chmod 777 uploads outputs
 # Update system packages (ignore repository errors)
 echo "Updating system packages..."
 sudo apt-get update -o Acquire::AllowInsecureRepositories=false || echo "Update had errors, continuing..."
-sudo apt-get install -y python3-pip python3-dev build-essential nginx || exit 1
+sudo apt-get install -y python3-pip python3-dev python3-venv build-essential nginx || exit 1
 
-# Install Python dependencies
-echo "Installing Python dependencies..."
-pip3 install -r requirements.txt || exit 1
-pip3 install gunicorn || exit 1
+# Create and activate virtual environment
+echo "Setting up Python virtual environment..."
+python3 -m venv venv
+source venv/bin/activate
+
+# Install Python dependencies in virtual environment
+echo "Installing Python dependencies in virtual environment..."
+pip install --upgrade pip
+pip install -r requirements.txt || exit 1
+pip install gunicorn || exit 1
 
 # Find available port
 echo "Finding available port..."
@@ -58,7 +64,7 @@ After=network.target
 [Service]
 User=$(whoami)
 WorkingDirectory=$(pwd)
-ExecStart=$(which gunicorn) --workers 3 --bind 127.0.0.1:$APP_PORT wsgi:app
+ExecStart=$(pwd)/venv/bin/gunicorn --workers 3 --bind 127.0.0.1:$APP_PORT wsgi:app
 Restart=always
 
 [Install]
