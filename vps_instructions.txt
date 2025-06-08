@@ -1,0 +1,133 @@
+# Instruksi untuk Menyelesaikan Konflik Git dan Deploy Aplikasi di VPS
+
+## 1. Menyelesaikan Konflik Git
+
+Buat file `resolve_git_conflicts.sh` di VPS dengan menjalankan perintah berikut:
+
+```bash
+cat > resolve_git_conflicts.sh << 'EOF'
+#!/bin/bash
+
+# Resolve Git conflicts
+echo "Resolving Git conflicts..."
+
+# Save our custom changes
+echo "Backing up our custom scripts..."
+mkdir -p .backup
+cp deploy.sh .backup/deploy.sh.custom
+cp fix_deploy.sh .backup/fix_deploy.sh.custom
+
+# Reset the files that have conflicts
+echo "Checking out original files..."
+git checkout -- deploy.sh fix_deploy.sh
+
+# Pull latest changes
+echo "Pulling latest changes..."
+git pull
+
+# Restore our custom changes
+echo "Restoring our custom scripts..."
+cp .backup/deploy.sh.custom deploy.sh
+cp .backup/fix_deploy.sh.custom fix_deploy.sh
+
+echo "Git conflicts resolved. You can now proceed with deployment."
+echo "Run ./fix_deploy.sh and then ./deploy.sh to deploy the application."
+EOF
+
+chmod +x resolve_git_conflicts.sh
+```
+
+## 2. Atau Gunakan Metode Manual
+
+Jika Anda kesulitan membuat script, ikuti langkah-langkah manual berikut:
+
+```bash
+# Cadangkan file kustom
+mkdir -p .backup
+cp deploy.sh .backup/deploy.sh.custom
+cp fix_deploy.sh .backup/fix_deploy.sh.custom
+
+# Reset file yang konfllik
+git checkout -- deploy.sh fix_deploy.sh
+
+# Tarik perubahan terbaru
+git pull
+
+# Kembalikan file kustom
+cp .backup/deploy.sh.custom deploy.sh
+cp .backup/fix_deploy.sh.custom fix_deploy.sh
+```
+
+## 3. Alternatif Cepat - Stash dan Apply
+
+```bash
+# Simpan perubahan lokal
+git stash
+
+# Tarik perubahan terbaru
+git pull
+
+# Terapkan perubahan lokal kembali
+git stash apply
+```
+
+## 4. Jika Masih Gagal, Buat Ulang File
+
+Gunakan editor teks seperti `nano` untuk membuat file dari awal:
+
+```bash
+# Edit fix_deploy.sh
+nano fix_deploy.sh
+```
+
+Isi dengan konten berikut:
+
+```bash
+#!/bin/bash
+
+# Fix repository issues
+echo "Fixing repository issues..."
+
+# Find and disable problematic repositories
+if [ -d "/etc/apt/sources.list.d" ]; then
+  echo "Looking for problematic speedtest repositories..."
+  sudo find /etc/apt/sources.list.d -name "*speedtest*" -exec sudo mv {} {}.disabled \; 2>/dev/null || echo "No speedtest repositories found"
+  
+  # Alternative method to disable the repository
+  echo "Trying alternative method to disable speedtest repository..."
+  if grep -r "packagecloud.io/ookla/speedtest-cli" /etc/apt/ > /dev/null; then
+    echo "Found problematic repository reference, disabling..."
+    sudo grep -l "packagecloud.io/ookla/speedtest-cli" /etc/apt/sources.list.d/* | xargs -r sudo sed -i 's/^deb/#deb/g'
+  fi
+fi
+
+# Update source lists
+echo "Updating apt sources with insecure repositories disabled..."
+sudo apt-get update -o Acquire::AllowInsecureRepositories=false || true
+
+echo "Repository fix complete. Now you can run the deploy script."
+echo "./deploy.sh"
+```
+
+Kemudian edit file deploy.sh:
+
+```bash
+nano deploy.sh
+```
+
+Salin konten terbaru untuk deploy.sh.
+
+## 5. Menjalankan Deployment
+
+Setelah konflik git diselesaikan:
+
+```bash
+# Berikan izin eksekusi
+chmod +x fix_deploy.sh deploy.sh
+
+# Jalankan fix repository
+./fix_deploy.sh
+
+# Jalankan deployment
+./deploy.sh
+``` 
