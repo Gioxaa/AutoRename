@@ -318,15 +318,6 @@
             else return (bytes / 1048576).toFixed(2) + ' MB';
         }
         
-        // Helper function to calculate upload speed
-        function calculateSpeed(loaded, startTime) {
-            const elapsed = (Date.now() - startTime) / 1000; // seconds
-            const speed = loaded / elapsed; // bytes per second
-            if (speed < 1024) return speed.toFixed(2) + ' B/s';
-            else if (speed < 1048576) return (speed / 1024).toFixed(2) + ' KB/s';
-            else return (speed / 1048576).toFixed(2) + ' MB/s';
-        }
-        
         function uploadFileWithProgress(file) {
             showProgress();
             
@@ -340,22 +331,72 @@
             let lastLoaded = 0;
             let lastTime = startTime;
             let currentSpeed = '0 KB/s';
+            let uploadStats = {
+                loaded: 0,
+                total: file.size,
+                speeds: []
+            };
+            
+            // Setup speed calculation timer
+            const speedTimer = setInterval(() => {
+                if (uploadStats.loaded > lastLoaded) {
+                    const now = Date.now();
+                    const timeDiff = (now - lastTime) / 1000; // in seconds
+                    const loadDiff = uploadStats.loaded - lastLoaded;
+                    
+                    // Calculate speed in bytes per second
+                    const speed = loadDiff / timeDiff;
+                    
+                    // Add to speed history (keep last 3 readings for smoothing)
+                    uploadStats.speeds.push(speed);
+                    if (uploadStats.speeds.length > 3) {
+                        uploadStats.speeds.shift();
+                    }
+                    
+                    // Calculate average speed for smoother display
+                    const avgSpeed = uploadStats.speeds.reduce((a, b) => a + b, 0) / uploadStats.speeds.length;
+                    
+                    // Format the speed
+                    if (avgSpeed < 1024) {
+                        currentSpeed = avgSpeed.toFixed(2) + ' B/s';
+                    } else if (avgSpeed < 1048576) {
+                        currentSpeed = (avgSpeed / 1024).toFixed(2) + ' KB/s';
+                    } else {
+                        currentSpeed = (avgSpeed / 1048576).toFixed(2) + ' MB/s';
+                    }
+                    
+                    lastLoaded = uploadStats.loaded;
+                    lastTime = now;
+                    
+                    // Update UI if not in processing state
+                    const percentComplete = Math.min(Math.round((uploadStats.loaded / uploadStats.total) * 100), 95);
+                    if (percentComplete < 95) {
+                        updateProgressUI(percentComplete, uploadStats.loaded, uploadStats.total, currentSpeed);
+                    }
+                    
+                    console.log(`Timer: ${percentComplete}%, Speed: ${currentSpeed}, Loaded: ${uploadStats.loaded}, Total: ${uploadStats.total}`);
+                }
+            }, 1000);
+            
+            // Helper function to update UI
+            function updateProgressUI(percent, loaded, total, speed) {
+                const loadedSize = formatFileSize(loaded);
+                const totalSize = formatFileSize(total);
+                progressBar.style.width = percent + '%';
+                progressText.innerHTML = `<strong>${percent}%</strong> · ${loadedSize} of ${totalSize} · <span style="color:#4CAF50">${speed}</span>`;
+            }
             
             // Setup upload progress handler
             xhr.upload.addEventListener('progress', function(e) {
                 if (e.lengthComputable) {
+                    // Update uploadStats for the timer to use
+                    uploadStats.loaded = e.loaded;
+                    uploadStats.total = e.total;
+                    
                     const percentComplete = Math.min(Math.round((e.loaded / e.total) * 100), 95);
                     progressBar.style.width = percentComplete + '%';
                     
-                    // Calculate speed every second to avoid rapid UI changes
-                    const now = Date.now();
-                    if (now - lastTime > 500) { // Update speed every 500ms
-                        currentSpeed = calculateSpeed(e.loaded - lastLoaded, now - lastTime);
-                        lastLoaded = e.loaded;
-                        lastTime = now;
-                    }
-                    
-                    // Format progress text with file size and speed
+                    // Update UI immediately for responsiveness
                     const loadedSize = formatFileSize(e.loaded);
                     const totalSize = formatFileSize(e.total);
                     
@@ -371,6 +412,9 @@
             
             // Setup completion handler
             xhr.addEventListener('load', function() {
+                // Clear the speed calculation timer
+                clearInterval(speedTimer);
+                
                 if (xhr.status === 200 || xhr.status === 302) {
                     // Show 100% complete before redirecting
                     progressBar.style.width = '100%';
