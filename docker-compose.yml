@@ -10,7 +10,7 @@ services:
       - pdf_uploads:/app/uploads
       - pdf_outputs:/app/outputs
     environment:
-      - SECRET_KEY=change_this_to_a_secure_random_string
+      - SECRET_KEY=dev_key_for_testing
       - SESSION_COOKIE_SECURE=false  # Set to true if using HTTPS
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000"]
